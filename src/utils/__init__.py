@@ -12,7 +12,7 @@ LOGGER_INITIALIZED: bool = False
 def initialize_logger(filename: str = '', level: int = logging.DEBUG):
     global LOGGER_INITIALIZED
     if not LOGGER_INITIALIZED:
-        format_str = "%(levelname)s %(name)s::%(funcName)s %(message)s"
+        format_str = "%(levelname)s %(name)s.%(filename)s::%(funcName)s %(message)s"
         if str != '':
             logging.basicConfig(filename=filename, format=format_str, level=level)
         else:

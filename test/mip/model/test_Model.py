@@ -220,3 +220,35 @@ class TestModel(TestCase):
         model.apply_domain_changes(domain_change, undo=True)
         self.assertEqual(c0.max_activity, 11)
         self.assertEqual(x.local_domain, previous_domain)
+
+    def test_convert_ge_inequalities(self):
+        model = Model()
+        x_id: int = model.add_var(variable_type=VarType.BINARY)
+        y_id: int = model.add_var(variable_type=VarType.BINARY)
+        c0_id: int = model.add_constraint([x_id, y_id],
+                                          [1.0, 1.0],
+                                          1.0,
+                                          sense=Sense.GE)
+
+        x: Variable = model.get_var(x_id)
+        y: Variable = model.get_var(y_id)
+        c0: Constraint = model.get_constraint(c0_id)
+        row: Row = c0.row
+
+        self.assertEqual(Sense.GE, c0.sense)
+        self.assertEqual(1.0, c0.rhs)
+        self.assertListEqual([x_id, y_id], row._indices)
+        self.assertListEqual([1.0, 1.0], row._coefficients)
+
+        self.assertEqual(1.0, x.column.get_coefficient(0))
+        self.assertEqual(1.0, y.column.get_coefficient(0))
+
+        # convert GE inequalities and check to see if it's correct
+        model.convert_ge_constraints()
+        self.assertEqual(Sense.LE, c0.sense)
+        self.assertEqual(-1.0, c0.rhs)
+        self.assertListEqual([x_id, y_id], row._indices)
+        self.assertListEqual([-1.0, -1.0], row._coefficients)
+
+        self.assertEqual(-1.0, x.column.get_coefficient(0))
+        self.assertEqual(-1.0, y.column.get_coefficient(0))

@@ -4,8 +4,7 @@ on the variables so that the binary variables appear first (this makes life
 easier when implementing Fix-Prop-Repair).
 
 TODO:
-    - implement instantiation from a gurobipy.Model instance
-
+    - [x] implement instantiation from a gurobipy.Model instance
 Author: Steven Maio
 """
 import logging
@@ -65,10 +64,10 @@ class Model:
                                 rhs)
         row: Row = constraint.row
         c_id: int = constraint.id
-        idx: int
-        coef: float
         min_activity: float = 0
         max_activity: float = 0
+        idx: int
+        coef: float
         # TODO: handle infinite bounds
         for idx, coef in zip(var_indices, coefficients):
             row.add_term(idx, coef)
@@ -134,6 +133,31 @@ class Model:
     def get_constraint(self, constraint_id: int) -> Constraint:
         return self._constraints[constraint_id]
 
+    def convert_ge_constraints(self):
+        """
+        Converts GE constraints into LE constraints.
+        :return:
+        """
+        logger: logging.Logger = logging.getLogger(__package__)
+        logger.info("converting GE constraints to LE constraints")
+        constraint: Constraint
+        for constraint in self._constraints:
+            if constraint.sense != Sense.GE:
+                continue
+            logger.debug("converting constraint=%d", constraint.id)
+            row: Row = constraint.row
+            constraint._rhs = -constraint.rhs
+            constraint._sense = Sense.LE
+            i: int
+            for i in range(row.size):
+                var_id: int
+                coefficient: float
+                var_id, coefficient = row.get_term(i)
+                var: Variable = self.get_var(var_id)
+                column: Column = var.column
+                column.modify_term(constraint.id, -coefficient)
+                row.modify_term(var_id, -coefficient)
+
     @property
     def num_variables(self):
         return self._num_variables
@@ -153,7 +177,9 @@ class Model:
     @staticmethod
     def from_gurobi_model(gp_model: gurobipy.Model) -> "Model":
         """
-        Creates a Model instance from a gurobipy.Model instance.
+        Creates a Model instance from a gurobipy.Model instance. The variables
+        are sorted based on their variable type. Binary variables come first,
+        then general integer variables and finally continuous variables.
 
         :param gp_model:
         :return: a Model instance wrapping gurobi_model

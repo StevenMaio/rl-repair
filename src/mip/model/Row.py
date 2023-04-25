@@ -1,3 +1,6 @@
+from typing import Tuple
+
+
 class Constraint:
     ...
 
@@ -31,6 +34,14 @@ class Row:
 
     def get_coefficient(self, index: int) -> float:
         return self._coefficients[index]
+
+    def get_term(self, index: int) -> Tuple[int, float]:
+        return self._indices[index], self._coefficients[index]
+
+    def modify_term(self, var_index: int, coefficient: float):
+        if var_index in self._indices:
+            index = self._indices.index(var_index)
+            self._coefficients[index] = coefficient
 
     @property
     def size(self) -> int:

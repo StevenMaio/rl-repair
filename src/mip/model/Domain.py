@@ -21,6 +21,9 @@ class Domain:
     def __eq__(self, other: "Domain"):
         return self._lower_bound == other._lower_bound and self._upper_bound == other._upper_bound
 
+    def __repr__(self) -> str:
+        return f'[{self._lower_bound}, {self._upper_bound}]'
+
 
 class DomainChange:
     _var_id: int
@@ -43,3 +46,6 @@ class DomainChange:
     @property
     def new_domain(self) -> Domain:
         return self._new_domain
+
+    def __repr__(self) -> str:
+        return f'DomainChange(var_id={self.var_id}, prev_domain={self.previous_domain} new_domain={self.new_domain}'
