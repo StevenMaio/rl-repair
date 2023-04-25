@@ -12,13 +12,16 @@ import logging
 import gurobipy
 
 from .Variable import Variable, VarType
-from .Constraint import Constraint
+from .Constraint import Constraint, Sense
 from .Row import Row
 from .Column import Column
+from .Domain import *
+
+from src.utils.constants import MAX_ABSOLUTE_VALUE
 
 
 class Model:
-    _gurobi_model: gurobipy.Model
+    _gp_model: gurobipy.Model
     _num_variables: int
     _num_binary_variables: int
     _num_integer_variables: int
@@ -28,7 +31,6 @@ class Model:
     _constraints: list[Constraint]
 
     def __init__(self):
-        self._gurobi_model = None
         self._num_variables = 0
         self._num_binary_variables = 0
         self._num_integer_variables = 0
@@ -36,6 +38,95 @@ class Model:
         self._num_constraints = 0
         self._variables = []
         self._constraints = []
+
+    def add_var(self,
+                variable_type: VarType = VarType.INTEGER,
+                lower_bound: float = 0,
+                upper_bound: float = MAX_ABSOLUTE_VALUE) -> int:
+        domain: Domain
+        if variable_type == VarType.BINARY:
+            domain = Domain(0, 1)
+        else:
+            domain = Domain(lower_bound, upper_bound)
+        var = Variable(self._num_variables,
+                       variable_type,
+                       domain)
+        self._num_variables += 1
+        self._variables.append(var)
+        return var.id
+
+    def add_constraint(self,
+                       var_indices: list[int],
+                       coefficients: list[float],
+                       rhs: float,
+                       sense: Sense = Sense.LE) -> int:
+        constraint = Constraint(self._num_constraints,
+                                sense,
+                                rhs)
+        row: Row = constraint.row
+        c_id: int = constraint.id
+        idx: int
+        coef: float
+        min_activity: float = 0
+        max_activity: float = 0
+        # TODO: handle infinite bounds
+        for idx, coef in zip(var_indices, coefficients):
+            row.add_term(idx, coef)
+            x: Variable = self.get_var(idx)
+            x.column.add_term(c_id, coef)
+            if coef > 0:
+                min_activity += x.lb * coef
+                max_activity += x.ub * coef
+            else:
+                min_activity += x.ub * coef
+                max_activity += x.lb * coef
+        constraint.min_activity = min_activity
+        constraint.max_activity = max_activity
+        self._constraints.append(constraint)
+        self._num_constraints += 1
+        return c_id
+
+    def apply_domain_changes(self,
+                             *domain_changes: DomainChange,
+                             undo: bool = False,
+                             recompute_activities: bool = True):
+        """
+        Applies the domain changes in domain_changes. If recompute_activities
+        is set to true, then the activities of the constraints affected by the
+        domain changes are updated, and their propagated flag is set to false.
+        :param domain_changes:
+        :param undo:
+        :param recompute_activities:
+        """
+        d: DomainChange
+        for d in domain_changes:
+            var: Variable = self.get_var(d.var_id)
+            prev_domain: Domain = d.previous_domain
+            new_domain: Domain = d.new_domain
+            if undo:
+                var.local_domain = prev_domain
+            else:
+                var.local_domain = new_domain
+            if recompute_activities:
+                # TODO: handle infinite bounds
+                ub_shift: float = new_domain.upper_bound - prev_domain.upper_bound
+                lb_shift: float = new_domain.lower_bound - prev_domain.lower_bound
+                if undo:
+                    ub_shift *= -1
+                    lb_shift *= -1
+                column: Column = var.column
+                i: int
+                for i in range(column.size):
+                    constraint_index: int = column.get_constraint_index(i)
+                    constraint: Constraint = self.get_constraint(constraint_index)
+                    constraint.propagated = False
+                    coefficient: float = column.get_coefficient(i)
+                    if coefficient > 0:
+                        constraint.min_activity += lb_shift * coefficient
+                        constraint.max_activity += ub_shift * coefficient
+                    else:
+                        constraint.min_activity += ub_shift * coefficient
+                        constraint.max_activity += lb_shift * coefficient
 
     def get_var(self, var_id: int) -> Variable:
         return self._variables[var_id]
@@ -70,6 +161,7 @@ class Model:
         logger: logging.Logger = logging.getLogger(__package__)
         logger.info('creating model from gurobipy.Model')
         model = Model()
+        model._gp_model = gp_model
         binary_variables: list[gurobipy.Var] = []
         integer_variables: list[gurobipy.Var] = []
         continuous_variables: list[gurobipy.Var] = []

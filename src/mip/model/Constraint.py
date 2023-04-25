@@ -27,21 +27,21 @@ class Constraint:
     _max_activity: float
     _rhs: float
     _sense: Sense
-    _gurobi_constraint: gurobipy.Constr
+    _gp_constraint: gurobipy.Constr
     _row: Row
+    _propagated: bool
 
     def __init__(self,
                  constraint_id: int,
                  sense: Sense,
-                 rhs: float,
-                 gp_constraint: gurobipy.Constr):
+                 rhs: float):
         self._constraint_id = constraint_id
         self._rhs = rhs
         self._sense = sense
         self._min_activity = 0
         self._max_activity = 0
-        self._gurobi_constraint = gp_constraint
         self._row = Row(self)
+        self._propagated = False
 
     def is_violated(self) -> bool:
         if self._sense == Sense.EQ:
@@ -81,9 +81,22 @@ class Constraint:
     def sense(self) -> Sense:
         return self._sense
 
+    @property
+    def id(self):
+        return self._constraint_id
+
+    @property
+    def propagated(self):
+        return self._propagated
+
+    @propagated.setter
+    def propagated(self, new_value: bool):
+        self._propagated = new_value
+
     @staticmethod
-    def from_gurobi_constr(constraint_id: int, gurobi_constr: gurobipy.Constr) -> "Constraint":
-        rhs: float = gurobi_constr.rhs
-        sense = Sense.from_str(gurobi_constr.sense)
-        constraint = Constraint(constraint_id, sense, rhs, gurobi_constr)
+    def from_gurobi_constr(constraint_id: int, gp_constr: gurobipy.Constr) -> "Constraint":
+        rhs: float = gp_constr.rhs
+        sense = Sense.from_str(gp_constr.sense)
+        constraint = Constraint(constraint_id, sense, rhs)
+        constraint._gp_constraint = gp_constr
         return constraint

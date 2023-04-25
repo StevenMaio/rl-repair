@@ -6,6 +6,7 @@ from gurobipy import GRB
 
 from src.mip.model import *
 from src.utils import initialize_logger
+from src.utils.constants import MAX_ABSOLUTE_VALUE
 
 initialize_logger()
 
@@ -135,3 +136,87 @@ class TestModel(TestCase):
         self.assertEqual(c.sense, Sense.EQ)
         self.assertListEqual(row._indices, actual_indices)
         self.assertListEqual(row._coefficients, actual_coefficients)
+
+    def test_add_var(self):
+        model = Model()
+        model.add_var()
+        model.add_var(variable_type=VarType.BINARY)
+
+        x: Variable = model.get_var(0)
+        y: Variable = model.get_var(1)
+
+        # test some asserts
+        x_id: int = 0
+        y_id: int = 1
+        self.assertEqual(x.id, x_id)
+        self.assertEqual(y.id, y_id)
+
+        x_domain = Domain(0, MAX_ABSOLUTE_VALUE)
+        y_domain = Domain(0, 1)
+        self.assertEqual(x.global_domain, x_domain)
+        self.assertEqual(y.global_domain, y_domain)
+
+        x_var_type = VarType.INTEGER
+        y_var_type = VarType.BINARY
+        self.assertEqual(x.variable_type, x_var_type)
+        self.assertEqual(y.variable_type, y_var_type)
+
+    def test_add_constraint(self):
+        model = Model()
+        x: int = model.add_var()
+        y: int = model.add_var(variable_type=VarType.BINARY)
+
+        variable_indices: list[int] = [x, y]
+        coefficients: list[float] = [1.0, -1.0]
+        rhs: float = 1.0
+        sense = Sense.EQ
+
+        c: int = model.add_constraint(variable_indices,
+                                      coefficients,
+                                      rhs,
+                                      sense)
+
+        x: Variable = model.get_var(x)
+        y: Variable = model.get_var(y)
+        c: Constraint = model.get_constraint(c)
+
+        self.assertEqual(x.column.size, 1)
+        self.assertEqual(x.column.get_constraint_index(0), 0)
+        self.assertEqual(x.column.get_coefficient(0), 1.0)
+        self.assertEqual(y.column.size, 1)
+        self.assertEqual(y.column.get_constraint_index(0), 0)
+        self.assertEqual(y.column.get_coefficient(0), -1.0)
+
+        # test the constraint
+        self.assertEqual(c.row.size, 2)
+        self.assertEqual(c.rhs, 1.0)
+        self.assertEqual(c.sense, Sense.EQ)
+        self.assertListEqual(c.row._indices, variable_indices)
+        self.assertListEqual(c.row._coefficients, coefficients)
+
+    def test_apply_domain_changes(self):
+        model = Model()
+        x_id: int = model.add_var(upper_bound=10)
+        y_id: int = model.add_var(variable_type=VarType.BINARY)
+        c0_id: int = model.add_constraint([x_id, y_id],
+                                          [1.0, 1.0],
+                                          1.0)
+        x: Variable = model.get_var(x_id)
+        y: Variable = model.get_var(y_id)
+        c0: Constraint = model.get_constraint(c0_id)
+
+        self.assertEqual(0, c0.min_activity)
+        self.assertEqual(11, c0.max_activity)
+
+        previous_domain: Domain = x.local_domain
+        new_domain = Domain(0, 5)
+
+        # test applying the domain changes
+        domain_change = DomainChange(x_id, previous_domain, new_domain)
+        model.apply_domain_changes(domain_change)
+        self.assertEqual(6, c0.max_activity)
+        self.assertEqual(new_domain, x.local_domain)
+
+        model.apply_domain_changes(domain_change, undo=True)
+        self.assertEqual(11, c0.max_activity)
+        self.assertEqual(previous_domain, x.local_domain)

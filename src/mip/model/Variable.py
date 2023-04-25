@@ -36,19 +36,17 @@ class Variable:
     _variable_type: VarType
     _local_domain: Domain
     _global_domain: Domain
-    _gurobi_var: gurobipy.Var
+    _gp_var: gurobipy.Var
     _column: Column
 
     def __init__(self,
                  var_id: int,
                  variable_type: VarType,
-                 global_domain: Domain,
-                 gp_var: gurobipy.Var):
+                 global_domain: Domain):
         self._var_id = var_id
         self._variable_type = variable_type
         self._global_domain = global_domain
         self._local_domain = global_domain.copy()
-        self._gurobi_var = gp_var
         self._column = Column(self)
 
     @property
@@ -85,8 +83,9 @@ class Variable:
         return self._local_domain.upper_bound
 
     @staticmethod
-    def from_gurobi_var(var_id: int, gurobi_var: gurobipy.Var) -> "Variable":
-        var_type = VarType.from_str(gurobi_var.vType)
-        domain = Domain(gurobi_var.lb, gurobi_var.ub)
-        variable = Variable(var_id, var_type, domain, gurobi_var)
+    def from_gurobi_var(var_id: int, gp_var: gurobipy.Var) -> "Variable":
+        var_type = VarType.from_str(gp_var.vType)
+        domain = Domain(gp_var.lb, gp_var.ub)
+        variable = Variable(var_id, var_type, domain)
+        variable._gp_var = gp_var
         return variable
