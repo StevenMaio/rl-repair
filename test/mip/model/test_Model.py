@@ -180,19 +180,19 @@ class TestModel(TestCase):
         y: Variable = model.get_var(y)
         c: Constraint = model.get_constraint(c)
 
-        self.assertEqual(x.column.size, 1)
-        self.assertEqual(x.column.get_constraint_index(0), 0)
-        self.assertEqual(x.column.get_coefficient(0), 1.0)
-        self.assertEqual(y.column.size, 1)
-        self.assertEqual(y.column.get_constraint_index(0), 0)
-        self.assertEqual(y.column.get_coefficient(0), -1.0)
+        self.assertEqual(1, x.column.size)
+        self.assertEqual(0, x.column.get_constraint_index(0))
+        self.assertEqual(1.0, x.column.get_coefficient(0))
+        self.assertEqual(1, y.column.size)
+        self.assertEqual(0, y.column.get_constraint_index(0))
+        self.assertEqual(-1.0, y.column.get_coefficient(0))
 
         # test the constraint
-        self.assertEqual(c.row.size, 2)
-        self.assertEqual(c.rhs, 1.0)
-        self.assertEqual(c.sense, Sense.EQ)
-        self.assertListEqual(c.row._indices, variable_indices)
-        self.assertListEqual(c.row._coefficients, coefficients)
+        self.assertEqual(2, c.row.size)
+        self.assertEqual(1.0, c.rhs)
+        self.assertEqual(Sense.EQ, c.sense)
+        self.assertListEqual(variable_indices, c.row._indices)
+        self.assertListEqual(coefficients, c.row._coefficients)
 
     def test_apply_domain_changes(self):
         model = Model()
@@ -214,9 +214,9 @@ class TestModel(TestCase):
         # test applying the domain changes
         domain_change = DomainChange(x_id, previous_domain, new_domain)
         model.apply_domain_changes(domain_change)
-        self.assertEqual(6, c0.max_activity)
-        self.assertEqual(new_domain, x.local_domain)
+        self.assertEqual(c0.max_activity, 6)
+        self.assertEqual(x.local_domain, new_domain)
 
         model.apply_domain_changes(domain_change, undo=True)
-        self.assertEqual(11, c0.max_activity)
-        self.assertEqual(previous_domain, x.local_domain)
+        self.assertEqual(c0.max_activity, 11)
+        self.assertEqual(x.local_domain, previous_domain)
