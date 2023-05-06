@@ -54,6 +54,7 @@ class TestModel(TestCase):
         self.assertEqual(model.num_binary_variables, actual_num_binary_variables)
         self.assertEqual(model.num_integer_variables, actual_num_integer_variables)
         self.assertEqual(model.num_continuous_variables, actual_num_continuous_variables)
+        self.assertTrue(model.initialized)
 
     def test_get_var(self):
         model: Model = self._instance
@@ -81,6 +82,10 @@ class TestModel(TestCase):
         self.assertEqual(column.size, actual_size)
         self.assertListEqual(column._indices, actual_indices)
         self.assertListEqual(column._coefficients, actual_coefficients)
+        self.assertEqual(0, x1.objective_coefficient)
+
+        x2: Variable = model.get_var(2)
+        self.assertEqual(1, x2.objective_coefficient)
 
     def test_get_constraint(self):
         model: Model = self._instance
@@ -252,3 +257,49 @@ class TestModel(TestCase):
 
         self.assertEqual(-1.0, x.column.get_coefficient(0))
         self.assertEqual(-1.0, y.column.get_coefficient(0))
+
+    def test_init_model1(self):
+        model = Model()
+        x_id = model.add_var(variable_type=VarType.BINARY)
+        y_id = model.add_var(variable_type=VarType.BINARY)
+
+        c0_id = model.add_constraint([x_id, y_id],
+                                     [1.0, 1.0],
+                                     1.0,
+                                     Sense.GE)
+        model.init()
+
+        c: Constraint = model.get_constraint(c0_id)
+        self.assertEqual(0.0, c.min_activity)
+        self.assertEqual(2.0, c.max_activity)
+
+    def test_init_model2(self):
+        model = Model()
+        x_id: int = model.add_var(variable_type=VarType.BINARY)
+        y_id: int = model.add_var(variable_type=VarType.BINARY)
+
+        x: Variable = model.get_var(x_id)
+        y: Variable = model.get_var(y_id)
+
+        c0_id: int = model.add_constraint([x_id, y_id],
+                                     [1.0, 1.0],
+                                     1.0,
+                                     Sense.GE)
+        model.convert_ge_constraints()
+        model.init()
+        self.assertFalse(model.violated)
+
+        c: Constraint = model.get_constraint(c0_id)
+        self.assertEqual(-2.0, c.min_activity)
+        self.assertEqual(0.0, c.max_activity)
+
+        domain_changes: list[DomainChange] = [
+            DomainChange.create_fixing(x, 0),
+            DomainChange.create_fixing(y, 0)
+        ]
+
+        model.apply_domain_changes(*domain_changes)
+        self.assertTrue(model.violated)
+
+        model.apply_domain_changes(*domain_changes, undo=True)
+        self.assertFalse(model.violated)

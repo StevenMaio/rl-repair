@@ -108,7 +108,7 @@ class TestLinearConstraintPropagator(TestCase):
     def test_propagate4(self):
         """
         Tests to see if propagation also works for equality constraints. This
-        tests the constraint x + y == 3, -2 <= x <= 2 and 0 <= y <= 2.
+        tests the constraint x - y == 2, 0 <= x <= 6 and 3 <= y <= 10.
         :return:
         """
         model = Model()

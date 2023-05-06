@@ -49,3 +49,9 @@ class DomainChange:
 
     def __repr__(self) -> str:
         return f'DomainChange(var_id={self.var_id}, prev_domain={self.previous_domain} new_domain={self.new_domain}'
+
+    @staticmethod
+    def create_fixing(var: "Variable", value: float) -> "DomainChange":
+        fixed_domain = Domain(value, value)
+        fixing = DomainChange(var.id, var.local_domain, fixed_domain)
+        return fixing

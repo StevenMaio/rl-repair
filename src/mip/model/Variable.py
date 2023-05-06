@@ -3,6 +3,7 @@ Variable class. Wraps around a gurobipy.Var instance.
 
 TODO:
     - should we update the underlying gurobipy.Var instance?
+    - need to know the sign of the objective coefficient
 
 Author: Steven Maio
 """
@@ -38,6 +39,7 @@ class Variable:
     _global_domain: Domain
     _gp_var: gurobipy.Var
     _column: Column
+    _objective_coefficient: float
 
     def __init__(self,
                  var_id: int,
@@ -48,6 +50,8 @@ class Variable:
         self._global_domain = global_domain
         self._local_domain = global_domain.copy()
         self._column = Column(self)
+        self._positive_objective_coefficient = 0
+        self._objective_coefficient = 0
 
     @property
     def column(self) -> Column:
@@ -82,10 +86,27 @@ class Variable:
     def ub(self):
         return self._local_domain.upper_bound
 
+    @property
+    def objective_coefficient(self) -> float:
+        return self._objective_coefficient
+
+    @objective_coefficient.setter
+    def objective_coefficient(self, new_value: float):
+        self._objective_coefficient = new_value
+
     @staticmethod
     def from_gurobi_var(var_id: int, gp_var: gurobipy.Var) -> "Variable":
+        def get_coefficient_sign(c: float) -> int:
+            if c == 0:
+                return 0
+            elif c > 0:
+                return 1
+            else:
+                return -1
         var_type = VarType.from_str(gp_var.vType)
         domain = Domain(gp_var.lb, gp_var.ub)
         variable = Variable(var_id, var_type, domain)
         variable._gp_var = gp_var
+        variable._objective_coefficient = gp_var.obj
+        # TODO: set the value of coefficient sign
         return variable

@@ -26,7 +26,6 @@ class LinearConstraintPropagator(Propagator):
         :param model:
         :param constraint:
         :param domain_changes:
-        :return:
         """
         if constraint.propagated:
             return

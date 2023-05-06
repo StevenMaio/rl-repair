@@ -10,7 +10,10 @@ Author: Steven Maio
 import logging
 import gurobipy
 
-from .Variable import Variable, VarType
+from enum import Enum, auto
+
+from .Objective import Objective, ObjSense
+from .Variable import VarType, Variable
 from .Constraint import Constraint, Sense
 from .Row import Row
 from .Column import Column
@@ -28,6 +31,9 @@ class Model:
     _num_constraints: int
     _variables: list[Variable]
     _constraints: list[Constraint]
+    _objective: Objective
+    _initialized: bool
+    _violated: bool
 
     def __init__(self):
         self._num_variables = 0
@@ -37,6 +43,9 @@ class Model:
         self._num_constraints = 0
         self._variables = []
         self._constraints = []
+        self._objective = None
+        self._initialized = False
+        self._violated = True
 
     def add_var(self,
                 variable_type: VarType = VarType.INTEGER,
@@ -85,6 +94,13 @@ class Model:
         self._num_constraints += 1
         return c_id
 
+    def set_objective(self,
+                      var_indices: list[int],
+                      coefficients: list[float],
+                      sense: ObjSense = ObjSense.MINIMIZE):
+        objective = Objective(var_indices, coefficients, sense)
+        self._objective = objective
+
     def apply_domain_changes(self,
                              *domain_changes: DomainChange,
                              undo: bool = False,
@@ -98,6 +114,7 @@ class Model:
         :param recompute_activities:
         """
         d: DomainChange
+        violated: bool = False
         for d in domain_changes:
             var: Variable = self.get_var(d.var_id)
             prev_domain: Domain = d.previous_domain
@@ -115,17 +132,26 @@ class Model:
                     lb_shift *= -1
                 column: Column = var.column
                 i: int
-                for i in range(column.size):
-                    constraint_index: int = column.get_constraint_index(i)
+                for constraint_index, coefficient in column:
                     constraint: Constraint = self.get_constraint(constraint_index)
                     constraint.propagated = False
-                    coefficient: float = column.get_coefficient(i)
                     if coefficient > 0:
                         constraint.min_activity += lb_shift * coefficient
                         constraint.max_activity += ub_shift * coefficient
                     else:
                         constraint.min_activity += ub_shift * coefficient
                         constraint.max_activity += lb_shift * coefficient
+                    violated |= constraint.is_violated()
+        if recompute_activities:
+            if undo:
+                # in this case, I think we have to check all the constraints again
+                violated = False
+                c: Constraint
+                for c in self._constraints:
+                    violated |= c.is_violated()
+                self._violated = violated
+            else:
+                self._violated |= violated
 
     def get_var(self, var_id: int) -> Variable:
         return self._variables[var_id]
@@ -149,30 +175,74 @@ class Model:
             constraint._rhs = -constraint.rhs
             constraint._sense = Sense.LE
             i: int
-            for i in range(row.size):
-                var_id: int
-                coefficient: float
-                var_id, coefficient = row.get_term(i)
+            for var_id, coefficient in row:
                 var: Variable = self.get_var(var_id)
                 column: Column = var.column
                 column.modify_term(constraint.id, -coefficient)
                 row.modify_term(var_id, -coefficient)
 
     @property
-    def num_variables(self):
+    def num_variables(self) -> int:
         return self._num_variables
 
     @property
-    def num_binary_variables(self):
+    def num_binary_variables(self) -> int:
         return self._num_binary_variables
 
     @property
-    def num_integer_variables(self):
+    def num_integer_variables(self) -> int:
         return self._num_integer_variables
 
     @property
-    def num_continuous_variables(self):
+    def num_continuous_variables(self) -> int:
         return self._num_continuous_variables
+
+    @property
+    def objective(self) -> Objective:
+        return self._objective
+
+    @property
+    def initialized(self) -> bool:
+        return self._initialized
+
+    @property
+    def violated(self) -> bool:
+        return self._violated
+
+    def init(self):
+        """
+        Initializes the model: computes the activities of the constraints, and
+        sets the values of coefficient_sign for integer values. Also converts
+        all GE inequalities to LE inequalities.
+        :return:
+        """
+        if self._initialized:
+            return
+        violated: bool = False
+        constraint: Constraint
+        for constraint in self._constraints:
+            row: Row = constraint.row
+            min_activity: float = 0
+            max_activity: float = 0
+            i: int
+            for index, coefficient in row:
+                var: Variable = self.get_var(index)
+                if coefficient > 0:
+                    min_activity += var.lb * coefficient
+                    max_activity += var.ub * coefficient
+                else:
+                    min_activity += var.ub * coefficient
+                    max_activity += var.lb * coefficient
+            constraint.min_activity = min_activity
+            constraint.max_activity = max_activity
+            violated |= constraint.is_violated()
+        # set the objective coefficients for the variables
+        if self._objective is not None:
+            for index, coefficient in self._objective:
+                var: Variable = self.get_var(index)
+                var.objective_coefficient = coefficient
+        self._initialized = True
+        self._violated = violated
 
     @staticmethod
     def from_gurobi_model(gp_model: gurobipy.Model) -> "Model":
@@ -233,6 +303,7 @@ class Model:
             var_index += 1
 
         # initialize the constraint data
+        violated: bool = False
         constraint_index: int = 0
         gp_constr: gurobipy.Constr
         for gp_constr in gp_model.getConstrs():
@@ -259,8 +330,11 @@ class Model:
                     max_activity += coefficient * var.lb
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
+            violated |= constraint.is_violated()
             constraint_index += 1
         model._num_constraints = constraint_index
+        model._initialized = True
+        model._violated = violated
         logger.info('num_vars=%d num_bin=%d num_int=%d num_cont=%d num_constrs=%d',
                     model._num_variables,
                     model._num_binary_variables,

@@ -28,7 +28,7 @@ def main():
     m.presolve()
     m.optimize()
 
-    fpr = FixPropRepair()
+    fpr = FixPropRepair(None)
 
     for v in m.getVars():
         print(v)

@@ -1,1 +1,2 @@
 from .LinearConstraintPropagator import LinearConstraintPropagator
+from .Propagator import Propagator

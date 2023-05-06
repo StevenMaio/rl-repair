@@ -43,6 +43,9 @@ class Row:
             index = self._indices.index(var_index)
             self._coefficients[index] = coefficient
 
+    def __iter__(self):
+        return zip(self._indices, self._coefficients)
+
     @property
     def size(self) -> int:
         return self._size
