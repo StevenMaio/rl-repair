@@ -23,8 +23,8 @@ class TestModel(TestCase):
         m = gp.Model(env=env)
         x1 = m.addVar(vtype=GRB.INTEGER, name="x1")
         x2 = m.addVar(vtype=GRB.INTEGER, name="x2")
-        m.addVar(vtype=GRB.BINARY, name="x3")
         x4 = m.addVar(vtype=GRB.CONTINUOUS, name="x4")
+        m.addVar(vtype=GRB.BINARY, name="x3")
         m.addConstr(3 * x1 + 2 * x2 <= 6, name="c1")
         m.addConstr(-3 * x1 + 2 * x2 <= 0, name="c2")
         m.setObjective(x2, sense=GRB.MAXIMIZE)
@@ -59,22 +59,9 @@ class TestModel(TestCase):
     def test_get_var(self):
         model: Model = self._instance
         counter: int = 0
-        # test to see that the variables are sorted by type
-        i: int
-        for i in range(model.num_binary_variables):
-            var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.type, VarType.BINARY)
-        counter = model.num_binary_variables
-        for i in range(model.num_integer_variables):
-            var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.type, VarType.INTEGER)
-        counter += model.num_integer_variables
-        for i in range(model.num_continuous_variables):
-            var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.type, VarType.CONTINUOUS)
 
         # test column of variable 1
-        x1: Variable = model.get_var(1)
+        x1: Variable = model.get_var(0)
         column: Column = x1.column
         actual_size: int = 3
         actual_indices: list[int] = [0, 1, 2]
@@ -84,7 +71,7 @@ class TestModel(TestCase):
         self.assertListEqual(column._coefficients, actual_coefficients)
         self.assertEqual(0, x1.objective_coefficient)
 
-        x2: Variable = model.get_var(2)
+        x2: Variable = model.get_var(1)
         self.assertEqual(1, x2.objective_coefficient)
 
     def test_get_constraint(self):
@@ -95,7 +82,7 @@ class TestModel(TestCase):
         row: Row = c.row
         actual_size: int = 2
         actual_rhs: float = 6.0
-        actual_indices: list[int] = [1, 2]
+        actual_indices: list[int] = [0, 1]
         actual_coefficients: list[float] = [3.0, 2.0]
         self.assertEqual(row.size, actual_size)
         self.assertEqual(c.rhs, actual_rhs)
@@ -108,7 +95,7 @@ class TestModel(TestCase):
         row: Row = c.row
         actual_size: int = 2
         actual_rhs: float = 0
-        actual_indices: list[int] = [1, 2]
+        actual_indices: list[int] = [0, 1]
         actual_coefficients: list[float] = [-3.0, 2.0]
         self.assertEqual(row.size, actual_size)
         self.assertEqual(c.rhs, actual_rhs)
@@ -121,7 +108,7 @@ class TestModel(TestCase):
         row: Row = c.row
         actual_size: int = 1
         actual_rhs: float = 0
-        actual_indices: list[int] = [1]
+        actual_indices: list[int] = [0]
         actual_coefficients: list[float] = [1]
         self.assertEqual(row.size, actual_size)
         self.assertEqual(c.rhs, actual_rhs)
@@ -134,7 +121,7 @@ class TestModel(TestCase):
         row: Row = c.row
         actual_size: int = 1
         actual_rhs: float = 0
-        actual_indices: list[int] = [3]
+        actual_indices: list[int] = [2]
         actual_coefficients: list[float] = [1]
         self.assertEqual(row.size, actual_size)
         self.assertEqual(c.rhs, actual_rhs)

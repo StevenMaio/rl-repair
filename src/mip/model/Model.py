@@ -305,49 +305,21 @@ class Model:
         logger.info('creating model from gurobipy.Model')
         model = Model()
         model._gp_model = gp_model
-        binary_variables: list[gurobipy.Var] = []
-        integer_variables: list[gurobipy.Var] = []
-        continuous_variables: list[gurobipy.Var] = []
-        variable_index_map: dict[int, int] = {}  # maps gurobi variable ids to ones in our representation
 
         # first sort the variables by type
-        gp_var: gurobipy.Var
-        for gp_var in gp_model.getVars():
-            var_type = VarType.from_str(gp_var.vType)
-            if var_type == VarType.BINARY:
-                binary_variables.append(gp_var)
-            elif var_type == VarType.INTEGER:
-                integer_variables.append(gp_var)
-            elif var_type == VarType.CONTINUOUS:
-                continuous_variables.append(gp_var)
-
-        model._num_binary_variables = len(binary_variables)
-        model._num_integer_variables = len(integer_variables)
-        model._num_continuous_variables = len(continuous_variables)
-        model._num_variables = sum([
-            model._num_binary_variables,
-            model._num_integer_variables,
-            model._num_continuous_variables
-        ])
-
-        # initialize variable data
         var_index: int = 0
         gp_var: gurobipy.Var
-        for gp_var in binary_variables:
+        for var_index, gp_var in enumerate(gp_model.getVars()):
             var = Variable.from_gurobi_var(var_index, gp_var)
-            variable_index_map[gp_var.index] = var_index
             model._variables.append(var)
-            var_index += 1
-        for gp_var in integer_variables:
-            var = Variable.from_gurobi_var(var_index, gp_var)
-            variable_index_map[gp_var.index] = var_index
-            model._variables.append(var)
-            var_index += 1
-        for gp_var in continuous_variables:
-            var = Variable.from_gurobi_var(var_index, gp_var)
-            variable_index_map[gp_var.index] = var_index
-            model._variables.append(var)
-            var_index += 1
+            var_type = VarType.from_str(gp_var.vType)
+            if var_type == VarType.BINARY:
+                model._num_binary_variables += 1
+            elif var_type == VarType.INTEGER:
+                model._num_integer_variables += 1
+            elif var_type == VarType.CONTINUOUS:
+                model._num_continuous_variables += 1
+        model._num_variables = len(model.variables)
 
         # initialize the constraint data
         violated: bool = False
@@ -363,7 +335,7 @@ class Model:
             row: Row = constraint.row
             for i in range(gurobi_row.size()):
                 gp_var: gurobipy.Var = gurobi_row.getVar(i)
-                index: int = variable_index_map[gp_var.index]
+                index: int = gp_var.index
                 coefficient: float = gurobi_row.getCoeff(i)
                 row.add_term(index, coefficient)
                 var: Variable = model._variables[index]

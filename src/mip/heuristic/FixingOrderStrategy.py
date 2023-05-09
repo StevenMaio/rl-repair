@@ -7,9 +7,10 @@ TODO:
 
 Author: Steven Maio
 """
+import random
 from abc import ABC, abstractmethod
 
-from src.utils import range_permutation
+from src.mip.model import VarType, Variable
 
 
 class FixingOrderStrategy(ABC):
@@ -41,24 +42,27 @@ class RandomFixingOrder(FixingOrderStrategy):
     """
     name: str = 'RandomFixingOrder'
 
-    _num_binary_vars: int
-    _num_integer_vars: int
     _size: int
     _current_index: int
     _indices: list[int]
 
     def __init__(self, model: "Model"):
-        self._num_binary_vars = model.num_binary_variables
-        self._num_integer_vars = model.num_integer_variables
-        binary_indices = range_permutation(self._num_binary_vars)
-        integer_indices = range_permutation(self._num_integer_vars)
-        self._indices = binary_indices + [self._num_binary_vars + n for n in integer_indices]
-        binary_indices.clear()
-        integer_indices.clear()
-        self._size = self._num_binary_vars + self._num_integer_vars
+        self._indices = []
+        binary_variables = []
+        integer_variables = []
+        var: Variable
+        for var in model.variables:
+            if var.type == VarType.BINARY:
+                binary_variables.append(var.id)
+            elif var.type == VarType.INTEGER:
+                integer_variables.append(var.id)
+        random.shuffle(binary_variables)
+        random.shuffle(integer_variables)
+        self._indices = binary_variables + integer_variables
+        self._size = len(self._indices)
         self._current_index = 0
 
-    def select_variable(self, model: "Model") -> "Variable":
+    def select_variable(self, model: "Model") -> Variable:
         # previous_index: int = self._current_index
         # previous_increment: int = self._last_increment
         # while self._current_index < self._size:
@@ -72,12 +76,11 @@ class RandomFixingOrder(FixingOrderStrategy):
         i: int = 0
         while i < self._size:
             var_id = self._indices[i]
-            var: "Variable" = model.get_var(var_id)
+            var: Variable = model.get_var(var_id)
             if var.lb != var.ub:
                 return var
             i += 1
         return None
-
 
     def backtrack(self, model: "Model"):
         # self._current_index -= self._last_increment
@@ -93,11 +96,17 @@ class LeftRightOrder(FixingOrderStrategy):
     name: str = "LeftRightOrder"
 
     _current_index: int
+    _indices: list[int]
     _size: int
 
     def __init__(self, model: "Model"):
+        self._indices = []
+        var: Variable
+        for var in model.variables:
+            if var.type == VarType.BINARY or var.type == VarType.INTEGER:
+                self._indices.append(var.id)
+        self._size = len(self._indices)
         self._current_index = 0
-        self._size = model.num_integer_variables + model.num_binary_variables
 
     def select_variable(self, model: "Model") -> "Variable":
         # previous_index: int = self._current_index
@@ -113,12 +122,13 @@ class LeftRightOrder(FixingOrderStrategy):
         # self._current_index = previous_index
         # self._last_increment = previous_increment
         # return None
-        var_id: int = 0
-        while var_id < self._size:
-            var: "Variable" = model.get_var(var_id)
+        i: int = 0
+        while i < self._size:
+            var_id = self._indices[i]
+            var: Variable = model.get_var(var_id)
             if var.lb != var.ub:
                 return var
-            var_id += 1
+            i += 1
         return None
 
     def backtrack(self, model: "Model"):
