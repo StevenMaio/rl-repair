@@ -40,6 +40,7 @@ class Variable:
     _gp_var: gurobipy.Var
     _column: Column
     _objective_coefficient: float
+    # TODO: the features which depend on the LP relaxation
 
     def __init__(self,
                  var_id: int,
@@ -72,7 +73,6 @@ class Variable:
     @local_domain.setter
     def local_domain(self, new_value: Domain):
         self._local_domain = new_value
-        # TODO: should we update the gurobi.Var stuff -- no?
 
     @property
     def global_domain(self) -> Domain:
@@ -94,19 +94,14 @@ class Variable:
     def objective_coefficient(self, new_value: float):
         self._objective_coefficient = new_value
 
+    def get_gurobi_var(self) -> gurobipy.Var:
+        return self._gp_var
+
     @staticmethod
     def from_gurobi_var(var_id: int, gp_var: gurobipy.Var) -> "Variable":
-        def get_coefficient_sign(c: float) -> int:
-            if c == 0:
-                return 0
-            elif c > 0:
-                return 1
-            else:
-                return -1
         var_type = VarType.from_str(gp_var.vType)
         domain = Domain(gp_var.lb, gp_var.ub)
         variable = Variable(var_id, var_type, domain)
         variable._gp_var = gp_var
         variable._objective_coefficient = gp_var.obj
-        # TODO: set the value of coefficient sign
         return variable

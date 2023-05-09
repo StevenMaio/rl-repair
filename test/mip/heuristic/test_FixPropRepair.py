@@ -4,10 +4,14 @@ from src.mip.heuristic import FixPropRepair
 from src.mip.model import *
 from src.mip.propagation import LinearConstraintPropagator
 from src.mip.heuristic.repair.RepairStrategy import RepairStrategy
+from src.mip.heuristic.repair.RepairWalk import RepairWalk
 from src.mip.heuristic.FixingOrderStrategy import *
 from src.mip.heuristic.ValueFixingStrategy import *
 
 import random
+
+import gurobipy as gp
+from gurobipy import GRB
 
 
 class FakeRepairStrategy(RepairStrategy):
@@ -149,3 +153,41 @@ class TestFixPropRepair(TestCase):
                             prop)
         success: bool = fpr.find_solution(model)
         self.assertFalse(success)
+
+    def test_find_sol_w_cts_vars(self):
+        """
+        Checks to see if continuous variables are handled correctly.
+        """
+        env = gp.Env()
+        env.setParam(GRB.Param.OutputFlag, 0)
+        gp_model = gp.Model(env=env)
+
+        x1 = gp_model.addVar(vtype=GRB.BINARY, name="x1")
+        x2 = gp_model.addVar(vtype=GRB.BINARY, name="x2")
+        x3 = gp_model.addVar(vtype=GRB.CONTINUOUS, name="x3", lb=0.0, ub=10.0)
+        gp_model.setObjective(x3, sense=GRB.MAXIMIZE)
+
+        gp_model.addConstr(-x1 - x2 == -1)
+        gp_model.addConstr(x1 + x3 <= 1.5)
+        gp_model.presolve()
+
+        model: Model = Model.from_gurobi_model(gp_model)
+        # initialize the components of FPR
+        prop = LinearConstraintPropagator()
+        fixing_order_strategy = LeftRightOrder(model)
+        value_fixing_strategy = UpperBoundFirst()
+        repair_strategy = RepairWalk()
+
+        domain_changes = [
+            DomainChange(0, Domain(0, 0), Domain.singleton(0)),
+            DomainChange(1, Domain(0, 0), Domain.singleton(0)),
+        ]
+        model.apply_domain_changes(*domain_changes)
+
+        fpr = FixPropRepair(fixing_order_strategy,
+                            value_fixing_strategy,
+                            repair_strategy,
+                            prop)
+        success: bool = fpr.find_solution(model)
+        self.assertTrue(success)
+
