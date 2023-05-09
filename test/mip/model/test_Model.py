@@ -63,15 +63,15 @@ class TestModel(TestCase):
         i: int
         for i in range(model.num_binary_variables):
             var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.variable_type, VarType.BINARY)
+            self.assertEqual(var.type, VarType.BINARY)
         counter = model.num_binary_variables
         for i in range(model.num_integer_variables):
             var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.variable_type, VarType.INTEGER)
+            self.assertEqual(var.type, VarType.INTEGER)
         counter += model.num_integer_variables
         for i in range(model.num_continuous_variables):
             var: Variable = model.get_var(counter + i)
-            self.assertEqual(var.variable_type, VarType.CONTINUOUS)
+            self.assertEqual(var.type, VarType.CONTINUOUS)
 
         # test column of variable 1
         x1: Variable = model.get_var(1)
@@ -163,8 +163,8 @@ class TestModel(TestCase):
 
         x_var_type = VarType.INTEGER
         y_var_type = VarType.BINARY
-        self.assertEqual(x.variable_type, x_var_type)
-        self.assertEqual(y.variable_type, y_var_type)
+        self.assertEqual(x.type, x_var_type)
+        self.assertEqual(y.type, y_var_type)
 
     def test_add_constraint(self):
         model = Model()

@@ -61,6 +61,12 @@ class Model:
                        domain)
         self._num_variables += 1
         self._variables.append(var)
+        if variable_type == VarType.BINARY:
+            self._num_binary_variables += 1
+        elif variable_type == VarType.INTEGER:
+            self._num_integer_variables += 1
+        else:
+            self._num_continuous_variables += 1
         return var.id
 
     def add_constraint(self,
@@ -113,16 +119,33 @@ class Model:
         :param undo:
         :param recompute_activities:
         """
+        logger: logging.Logger = logging.getLogger(__package__)
         d: DomainChange
         violated: bool = False
         for d in domain_changes:
             var: Variable = self.get_var(d.var_id)
             prev_domain: Domain = d.previous_domain
             new_domain: Domain = d.new_domain
+            if new_domain == prev_domain:
+                continue
             if undo:
                 var.local_domain = prev_domain
+                logger.debug("var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
+                             var.id,
+                             new_domain.lower_bound,
+                             new_domain.upper_bound,
+                             prev_domain.lower_bound,
+                             prev_domain.upper_bound,
+                             undo)
             else:
                 var.local_domain = new_domain
+                logger.debug("var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
+                             var.id,
+                             prev_domain.lower_bound,
+                             prev_domain.upper_bound,
+                             new_domain.lower_bound,
+                             new_domain.upper_bound,
+                             undo)
             if recompute_activities:
                 # TODO: handle infinite bounds
                 ub_shift: float = new_domain.upper_bound - prev_domain.upper_bound
@@ -142,6 +165,12 @@ class Model:
                         constraint.min_activity += ub_shift * coefficient
                         constraint.max_activity += lb_shift * coefficient
                     violated |= constraint.is_violated()
+                    logger.debug("constraint-change id=%d min_activity=%.2f max_activity=%2.f rhs=%.2f violated=%d",
+                                 constraint.id,
+                                 constraint.min_activity,
+                                 constraint.max_activity,
+                                 constraint.rhs,
+                                 constraint.is_violated())
         if recompute_activities:
             if undo:
                 # in this case, I think we have to check all the constraints again
@@ -209,6 +238,18 @@ class Model:
     def violated(self) -> bool:
         return self._violated
 
+    @violated.setter
+    def violated(self, new_value: bool):
+        self._violated = new_value
+
+    @property
+    def constraints(self) -> list[Constraint]:
+        return self._constraints
+
+    @property
+    def variables(self) -> list[Variable]:
+        return self._variables
+
     def init(self):
         """
         Initializes the model: computes the activities of the constraints, and
@@ -218,13 +259,13 @@ class Model:
         """
         if self._initialized:
             return
+        logger: logging.Logger = logging.getLogger(__package__)
         violated: bool = False
         constraint: Constraint
         for constraint in self._constraints:
             row: Row = constraint.row
             min_activity: float = 0
             max_activity: float = 0
-            i: int
             for index, coefficient in row:
                 var: Variable = self.get_var(index)
                 if coefficient > 0:
@@ -236,6 +277,12 @@ class Model:
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
             violated |= constraint.is_violated()
+            logger.debug("constraint=%d min_activity=%.2f max_activity=%.2f rhs=%.2f violated=%d",
+                         constraint.id,
+                         constraint.min_activity,
+                         constraint.max_activity,
+                         constraint.rhs,
+                         constraint.is_violated())
         # set the objective coefficients for the variables
         if self._objective is not None:
             for index, coefficient in self._objective:

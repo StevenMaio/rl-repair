@@ -11,14 +11,22 @@ class Sense(Enum):
 
     @staticmethod
     def from_str(s: str) -> "Sense":
-        if s == "<":
+        if s == '<':
             return Sense.LE
-        elif s == "=":
+        elif s == '=':
             return Sense.EQ
-        elif s == ">":
+        elif s == '>':
             return Sense.GE
         else:
-            raise Exception("Invalid string value")
+            raise Exception('Invalid string value')
+
+    def __str__(self):
+        if self == Sense.LE:
+            return '<'
+        elif self == Sense.GE:
+            return '>'
+        else:
+            return '='
 
 
 class Constraint:
@@ -43,13 +51,16 @@ class Constraint:
         self._row = Row(self)
         self._propagated = False
 
-    def is_violated(self) -> bool:
+    def is_violated(self, min_activity: float = None, max_activity: float = None) -> bool:
+        if min_activity is None:
+            min_activity = self._min_activity
+            max_activity = self._max_activity
         if self._sense == Sense.EQ:
-            return self._rhs < self._min_activity or self._rhs > self._max_activity
+            return self._rhs < min_activity or self._rhs > max_activity
         elif self._sense == Sense.GE:
-            return self._max_activity < self._rhs
+            return max_activity < self._rhs
         elif self._sense == Sense.LE:
-            return self._min_activity > self._rhs
+            return min_activity > self._rhs
         else:
             raise Exception("Constraint sense is invalid")
 
@@ -100,3 +111,7 @@ class Constraint:
         constraint = Constraint(constraint_id, sense, rhs)
         constraint._gp_constraint = gp_constr
         return constraint
+
+    def __repr__(self) -> str:
+        return f'Constraint(id={self._constraint_id}, rhs={self._rhs}, ' \
+               f'sense=\'{self._sense}\', activity=[{self._min_activity}, {self._max_activity}])'

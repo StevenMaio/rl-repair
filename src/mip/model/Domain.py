@@ -1,4 +1,5 @@
 class Domain:
+    EMPTY_DOMAIN: "Domain"
     _lower_bound: float
     _upper_bound: float
 
@@ -24,6 +25,31 @@ class Domain:
     def __repr__(self) -> str:
         return f'[{self._lower_bound}, {self._upper_bound}]'
 
+    def intersects(self, other: "Domain") -> bool:
+        return not (other.upper_bound < self.lower_bound or other.lower_bound > self.upper_bound)
+
+    def compute_intersection(self, other: "Domain") -> "Domain":
+        if not self.intersects(other):
+            return Domain.EMPTY_DOMAIN
+        else:
+            lb: float = max(self.lower_bound, other.lower_bound)
+            ub: float = max(min(self.upper_bound, other.upper_bound),
+                            lb)
+            return Domain(lb, ub)
+
+    def __add__(self, shift: float) -> "Domain":
+        new_domain = Domain(self.lower_bound + shift,
+                            self.upper_bound + shift)
+        return new_domain
+
+    @staticmethod
+    def singleton(value: float) -> "Domain":
+        singleton = Domain(value, value)
+        return singleton
+
+
+Domain.EMPTY_DOMAIN = -1
+
 
 class DomainChange:
     _var_id: int
@@ -48,7 +74,7 @@ class DomainChange:
         return self._new_domain
 
     def __repr__(self) -> str:
-        return f'DomainChange(var_id={self.var_id}, prev_domain={self.previous_domain} new_domain={self.new_domain}'
+        return f'DomainChange(var_id={self.var_id}, prev_domain={self.previous_domain} new_domain={self.new_domain})'
 
     @staticmethod
     def create_fixing(var: "Variable", value: float) -> "DomainChange":

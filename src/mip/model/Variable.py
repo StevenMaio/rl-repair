@@ -62,7 +62,7 @@ class Variable:
         return self._var_id
 
     @property
-    def variable_type(self) -> VarType:
+    def type(self) -> VarType:
         return self._variable_type
 
     @property
