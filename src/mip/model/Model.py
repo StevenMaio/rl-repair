@@ -250,6 +250,9 @@ class Model:
     def variables(self) -> list[Variable]:
         return self._variables
 
+    def get_gurobi_model(self) -> gurobipy.Model:
+        return self._gp_model
+
     def init(self):
         """
         Initializes the model: computes the activities of the constraints, and

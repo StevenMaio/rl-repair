@@ -1,5 +1,8 @@
 import logging
 
+import gurobipy
+from gurobipy import GRB
+
 from .FixingOrderStrategy import FixingOrderStrategy
 from .ValueFixingStrategy import ValueFixingStrategy
 from src.mip.heuristic.repair import RepairStrategy
@@ -112,6 +115,11 @@ class FixPropRepair:
         the upper bound or to the lower bound. Is that the branching strategy? One
         child fixes to the node ot the upper or lower bound, and the other child
         fixes the variable to the opposite bound?
+
+        In the event that all integral variables have been fixed and the model
+        has continuous variables, then the LP which results from the fixings
+        will be solved. This requires model has been initialized from a gurobipy.Model
+        instance. If this is not the case, then an exception will be raised.
         :param model:
         :return:
         """
@@ -145,9 +153,23 @@ class FixPropRepair:
                         self._fixing_order_strategy.backtrack(model)
                     search_stack.pop()
         if success:
-            # TODO: handle when all variables have been fixed -- solve LP to get solution
-            self._logger.info("solution found")
-            ...
+            self._logger.info("feasible integer variable fixing found")
+            if model.num_continuous_variables > 0:
+                # solve the resulting LP to find a solution
+                gp_model: gurobipy.Model = model.get_gurobi_model()
+                self._logger.info("Gurobi model found. Solving LP")
+                var: Variable
+                for var in model.variables:
+                    gp_var: gurobipy.Var = var.get_gurobi_var()
+                    gp_var.lb = var.lb
+                    gp_var.ub = var.ub
+                gp_model.optimize()
+                status: int = gp_model.status
+                success = (status == GRB.OPTIMAL)
+                if success:
+                    self._logger.info("Solution found")
+                else:
+                    self._logger.info("No solution found")
         else:
-            self._logger.info('no solution found')
+            self._logger.info('no feasible integer variable fixing found')
         return success
