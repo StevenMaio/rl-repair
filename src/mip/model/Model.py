@@ -295,13 +295,15 @@ class Model:
         self._violated = violated
 
     @staticmethod
-    def from_gurobi_model(gp_model: gurobipy.Model) -> "Model":
+    def from_gurobi_model(gp_model: gurobipy.Model,
+                          solve_lp: bool = False) -> "Model":
         """
         Creates a Model instance from a gurobipy.Model instance. The variables
         are sorted based on their variable type. Binary variables come first,
         then general integer variables and finally continuous variables.
 
         :param gp_model:
+        :param solve_lp:
         :return: a Model instance wrapping gurobi_model
         """
         logger: logging.Logger = logging.getLogger(__package__)
@@ -309,8 +311,7 @@ class Model:
         model = Model()
         model._gp_model = gp_model
 
-        # first sort the variables by type
-        var_index: int = 0
+        var_index: int
         gp_var: gurobipy.Var
         for var_index, gp_var in enumerate(gp_model.getVars()):
             var = Variable.from_gurobi_var(var_index, gp_var)

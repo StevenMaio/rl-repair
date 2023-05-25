@@ -8,8 +8,6 @@ import math
 
 from ...model import Sense, VarType, Domain, DomainChange
 
-from src.mip.params import RepairWalkParams
-
 from src.utils import compute_interval_distance, REPAIR_LEVEL
 from src.utils.data_struct.CircularList import CircularList
 
@@ -36,23 +34,21 @@ class RepairWalk(RepairStrategy):
     _logger: logging.Logger
 
     def __init__(self,
-                 max_iterations: int = RepairWalkParams.MAX_ITERATIONS,
-                 soft_reset_limit: int = RepairWalkParams.SOFT_RESET_LIMIT,
-                 noise_parameter: float = RepairWalkParams.NOISE_PARAMETER,
-                 history_size: int = RepairWalkParams.MAX_HISTORY,
+                 params: "RepairWalkParams",
                  **kwargs):
-        self._max_iterations = max_iterations
-        self._soft_reset_limit = soft_reset_limit
-        self._noise_parameter = noise_parameter
-        self._history_size = history_size
+        self._max_iterations = params.max_iterations
+        self._soft_reset_limit = params.soft_reset_limit
+        self._noise_parameter = params.noise_parameter
+        self._history_size = params.history_size
         self._violation_scorer = num_violated_constraints
         self._logger = logging.getLogger(__package__)
         self._logger.setLevel(REPAIR_LEVEL)
         self._logger.log(REPAIR_LEVEL,
-                         'initialized max_iterations=%d soft_reset_limit=%d noise_parameter=%.2f',
-                         max_iterations,
-                         soft_reset_limit,
-                         noise_parameter)
+                         'initialized max_iterations=%d soft_reset_limit=%d noise_parameter=%.2f max_history=%d',
+                         params.max_iterations,
+                         params.soft_reset_limit,
+                         params.noise_parameter,
+                         params.history_size)
 
     def repair_domain(self,
                       model: "Model",

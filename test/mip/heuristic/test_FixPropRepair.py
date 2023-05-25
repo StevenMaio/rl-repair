@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from mip.params import RepairWalkParams
 from src.mip.heuristic import FixPropRepair
 from src.mip.model import *
 from src.mip.propagation import LinearConstraintPropagator
@@ -176,7 +177,8 @@ class TestFixPropRepair(TestCase):
         prop = LinearConstraintPropagator()
         fixing_order_strategy = LeftRightOrder(model)
         value_fixing_strategy = UpperBoundFirst()
-        repair_strategy = RepairWalk()
+        params = RepairWalkParams()
+        repair_strategy = RepairWalk(params)
 
         domain_changes = [
             DomainChange(0, Domain(0, 0), Domain.singleton(0)),

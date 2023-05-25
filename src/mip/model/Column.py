@@ -49,4 +49,3 @@ class Column:
     @property
     def size(self) -> int:
         return self._size
-

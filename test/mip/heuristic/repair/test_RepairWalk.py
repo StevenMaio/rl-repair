@@ -15,6 +15,7 @@ from unittest import TestCase
 
 from src.mip.model import Model, VarType, Sense, DomainChange, Domain, Variable
 from src.mip.heuristic.repair.RepairWalk import RepairWalk
+from src.mip.params import RepairWalkParams
 
 import random
 import logging
@@ -63,7 +64,8 @@ class TestRepairWalk(TestCase):
         model.apply_domain_changes(*domain_changes)
         self.assertTrue(model.violated)
 
-        repair_walk = RepairWalk()
+        params = RepairWalkParams()
+        repair_walk = RepairWalk(params)
         repair_changes = []
         success: bool = repair_walk.repair_domain(model, repair_changes)
         self.assertTrue(success)
@@ -106,7 +108,8 @@ class TestRepairWalk(TestCase):
         model.apply_domain_changes(*domain_changes)
         self.assertTrue(model.violated)
 
-        repair_walk = RepairWalk()
+        params = RepairWalkParams()
+        repair_walk = RepairWalk(params)
         repair_changes = []
         success: bool = repair_walk.repair_domain(model, repair_changes)
         self.assertTrue(success)
@@ -152,7 +155,8 @@ class TestRepairWalk(TestCase):
         model.apply_domain_changes(*domain_changes)
         self.assertTrue(model.violated)
 
-        repair_walk = RepairWalk()
+        params = RepairWalkParams()
+        repair_walk = RepairWalk(params)
         repair_changes = []
         success: bool = repair_walk.repair_domain(model, repair_changes)
 
@@ -201,7 +205,8 @@ class TestRepairWalk(TestCase):
         model.apply_domain_changes(*domain_changes)
         self.assertTrue(model.violated)
 
-        repair_walk = RepairWalk(soft_reset_limit=1)
+        params = RepairWalkParams(soft_reset_limit=1)
+        repair_walk = RepairWalk(params)
         repair_changes = []
         success: bool = repair_walk.repair_domain(model, repair_changes)
         self.assertFalse(success)
@@ -236,7 +241,8 @@ class TestRepairWalk(TestCase):
         model.apply_domain_changes(*domain_changes)
         self.assertTrue(model.violated)
 
-        repair_walk = RepairWalk()
+        params = RepairWalkParams()
+        repair_walk = RepairWalk(params)
         repair_changes = []
         success: bool = repair_walk.repair_domain(model, repair_changes)
         self.assertTrue(success)
