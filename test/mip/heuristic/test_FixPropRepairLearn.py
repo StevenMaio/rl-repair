@@ -1,7 +1,9 @@
 from unittest import TestCase
 
-from src.rl.model import GraphNeuralNetwork
+from src.rl.architecture import GraphNeuralNetwork
 from src.rl.params import GnnParams
+from src.rl.mip import EnhancedModel
+
 from src.mip.propagation import LinearConstraintPropagator
 from src.mip.model import VarType, Sense, Model, Variable, DomainChange
 from src.mip.heuristic.repair import RepairStrategy
@@ -22,11 +24,11 @@ class FakeRepairStrategy(RepairStrategy):
 
 
 class TestFixPropRepairLearn(TestCase):
-    _model: Model
+    _model: EnhancedModel
 
     def setUp(self):
         random.seed(RNG_SEED)
-        model = Model()
+        model = EnhancedModel()
 
         x = model.add_var(variable_type=VarType.BINARY)
         y = model.add_var(variable_type=VarType.BINARY)
@@ -54,10 +56,10 @@ class TestFixPropRepairLearn(TestCase):
         num_samples = 1_000
         model = self._model
         gnn = GraphNeuralNetwork(GnnParams)
-        fprl = FixPropRepairLearn(gnn,
-                                  FakeRepairStrategy(),
+        model.gnn = gnn
+        fprl = FixPropRepairLearn(FakeRepairStrategy(),
                                   LinearConstraintPropagator())
-        fprl.update(model)
+        model.update()
 
         fixing_order_strategy = fprl._fixing_order_strategy
         samples = []
@@ -70,7 +72,7 @@ class TestFixPropRepairLearn(TestCase):
 
         freq /= num_samples
         fixing_order_mlp = fixing_order_strategy._scoring_function
-        var_features = torch.stack(fprl._var_features)
+        var_features = torch.stack(model.var_features)
         scores = fixing_order_mlp(var_features)
         probabilities = torch.softmax(scores, dim=0)
 
@@ -87,15 +89,15 @@ class TestFixPropRepairLearn(TestCase):
         num_samples = 1_000
         model = self._model
         gnn = GraphNeuralNetwork(GnnParams)
-        fprl = FixPropRepairLearn(gnn,
-                                  FakeRepairStrategy(),
+        model.gnn = gnn
+        fprl = FixPropRepairLearn(FakeRepairStrategy(),
                                   LinearConstraintPropagator())
         # fix the first variable
         var_idx = 1
         x: Variable = model.get_var(var_idx)
         x_bound_change = DomainChange.create_fixing(x, x.lb)
         model.apply_domain_changes(x_bound_change)
-        fprl.update(model)
+        model.update()
 
         fixing_order_strategy = fprl._fixing_order_strategy
         samples = []
@@ -115,10 +117,10 @@ class TestFixPropRepairLearn(TestCase):
 
         model = self._model
         gnn = GraphNeuralNetwork(GnnParams)
-        fprl = FixPropRepairLearn(gnn,
-                                  FakeRepairStrategy(),
+        model.gnn = gnn
+        fprl = FixPropRepairLearn(FakeRepairStrategy(),
                                   LinearConstraintPropagator())
-        fprl.update(model)
+        model.update()
 
         fixing_order_strategy = fprl._fixing_order_strategy
         value_fixing_strategy = fprl._value_fixing_strategy
@@ -126,7 +128,7 @@ class TestFixPropRepairLearn(TestCase):
         var = fixing_order_strategy.select_variable(model)
 
         vls_mlp = value_fixing_strategy._scoring_function
-        score = vls_mlp(fprl._var_features[var.id])
+        score = vls_mlp(model.var_features[var.id])
         p = torch.sigmoid(score).item()
 
         samples = []

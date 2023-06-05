@@ -2,14 +2,14 @@ import torch
 
 import random
 
-from src.rl.graph import Graph
 from src.rl.params import GnnParams
-from src.rl.model import MultilayerPerceptron
-from src.mip.model import Model, VarType
+from src.rl.architecture import MultilayerPerceptron
+from src.mip.model import VarType
+
+from src.rl.mip import EnhancedModel
 
 from src.mip.heuristic.repair import RepairStrategy
 from src.mip.propagation import Propagator
-from src.rl.model import GraphNeuralNetwork
 from src.mip.heuristic import FixPropRepair
 
 from .FprNode import FprNode
@@ -20,19 +20,16 @@ from .ValueFixingStrategy import ValueFixingStrategy
 class _FprlFixingOrderStrategy(FixingOrderStrategy):
     name: str = 'FprlFixingOrderStrategy'
 
-    _fprl: "FixPropRepairLearn"
     _scoring_function: MultilayerPerceptron
     _sample_index: bool
 
     def __init__(self,
-                 fprl: "FixPropRepairLearn",
                  scoring_function: MultilayerPerceptron,
                  sample_index: bool = True):
-        self._fprl = fprl
         self._scoring_function = scoring_function
         self._sample_index = sample_index
 
-    def select_variable(self, model: "Model") -> "Variable":
+    def select_variable(self, model: "EnhancedModel") -> "Variable":
         var_ids = []
         features = []
         for var in model.variables:
@@ -41,7 +38,7 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
                 continue
             if var.lb != var.ub:
                 var_ids.append(var.id)
-                features.append(self._fprl._var_features[idx])
+                features.append(model.var_features[idx])
         if len(var_ids) == 0:
             return None
         features = torch.stack(features)
@@ -54,28 +51,25 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
             var_idx = var_ids[idx]
         return model.get_var(var_idx)
 
-    def backtrack(self, model: "Model"):
+    def backtrack(self, model: "EnhancedModel"):
         pass  # do nothing
 
 
 class _FprlValueSelectionStrategy(ValueFixingStrategy):
     name: str = 'FprlValueFixingStrategy'
 
-    _fprl: "FixPropRepairLearn"
     _scoring_function: MultilayerPerceptron
     _sample_index: bool
 
     def __init__(self,
-                 fprl: "FixPropRepairLearn",
                  scoring_function: MultilayerPerceptron,
                  sample_index: bool = True):
-        self._fprl = fprl
         self._scoring_function = scoring_function
         self._sample_index = sample_index
 
-    def select_fixing_value(self, model: "Model", var: "Variable") -> tuple[int, int]:
+    def select_fixing_value(self, model: "EnhancedModel", var: "Variable") -> tuple[int, int]:
         idx = var.id
-        features = self._fprl._var_features[idx]
+        features = model.var_features[idx]
         score = self._scoring_function(features)
         p = torch.sigmoid(score).item()
 
@@ -96,14 +90,8 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
 
 
 class FixPropRepairLearn(FixPropRepair):
-    _instance_graph: Graph
-    _gnn: GraphNeuralNetwork
-    _var_features: list[torch.Tensor]
-    _cons_features: list[torch.Tensor]
-    _initialized: bool
 
     def __init__(self,
-                 gnn: GraphNeuralNetwork,
                  repair_strategy: RepairStrategy,
                  propagator: Propagator,
                  max_absolute_value: float = float('inf'),
@@ -113,13 +101,11 @@ class FixPropRepairLearn(FixPropRepair):
         fixing_order_mlp = MultilayerPerceptron([GnnParams.intermediate_layers,
                                                  2 * GnnParams.intermediate_layers,
                                                  1])
-        fixing_order_strategy = _FprlFixingOrderStrategy(self,
-                                                         fixing_order_mlp)
+        fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_mlp)
         value_fixing_mlp = MultilayerPerceptron([GnnParams.intermediate_layers,
                                                  2 * GnnParams.intermediate_layers,
                                                  1])
-        value_fixing_strategy = _FprlValueSelectionStrategy(self,
-                                                            value_fixing_mlp)
+        value_fixing_strategy = _FprlValueSelectionStrategy(value_fixing_mlp)
         super().__init__(fixing_order_strategy,
                          value_fixing_strategy,
                          repair_strategy,
@@ -128,11 +114,8 @@ class FixPropRepairLearn(FixPropRepair):
                          propagate_fixings,
                          repair,
                          backtrack_on_infeasibility)
-        self._gnn = gnn
-        self._initialized = False
-        self._repair_strategy._fprl = self
 
-    def find_solution(self, model: Model):
+    def find_solution(self, model: EnhancedModel):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -140,9 +123,9 @@ class FixPropRepairLearn(FixPropRepair):
         child fixes to the node ot the upper or lower bound, and the other child
         fixes the variable to the opposite bound?
 
-        In the event that all integral variables have been fixed and the model
+        In the event that all integral variables have been fixed and the architecture
         has continuous variables, then the LP which results from the fixings
-        will be solved. This requires model has been initialized from a gurobipy.Model
+        will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
         :param model:
         :return:
@@ -153,12 +136,11 @@ class FixPropRepairLearn(FixPropRepair):
         search_stack: list[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
-        self.update(model)
 
         while len(search_stack) > 0 and continue_dive:
             node: FprNode = search_stack[-1]
             if not node.visited:
-                self.update(model)
+                model.update()
                 success: bool = self._find_solution_helper_node_loop(model, node)
                 if success:
                     continue_dive = False
@@ -188,12 +170,4 @@ class FixPropRepairLearn(FixPropRepair):
                     self._logger.info("No solution found")
         else:
             self._logger.info('no feasible integer variable fixing found')
-        self._initialized = False
         return success
-
-    def update(self, model: Model):
-        if not self._initialized:
-            self._instance_graph = Graph(model)
-        else:
-            self._instance_graph.update()
-        self._var_features, self._cons_features = self._gnn(self._instance_graph)

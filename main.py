@@ -10,12 +10,12 @@ from gurobipy import GRB
 def main():
     initialize_logger()
 
-    # initialize model
+    # initialize architecture
     env = gp.Env()
     env.setParam(GRB.Param.OutputFlag, 0)
     m = gp.Model(env=env)
     logger: logging.Logger = logging.getLogger(__name__)
-    logger.info('model created')
+    logger.info('architecture created')
 
     x: gp.Var = m.addVar(ub=10, name='x', vtype=GRB.INTEGER)
     y: gp.Var = m.addVar(name='y', vtype=GRB.BINARY)

@@ -4,20 +4,20 @@ import torch
 
 from unittest import TestCase
 
+from src.rl.mip import EnhancedModel
 from src.mip.params import RepairWalkParams
 from src.mip.propagation import LinearConstraintPropagator
 from src.mip.heuristic.repair import LearnableRepairWalk
 from src.mip.heuristic import FixPropRepairLearn
 
-from src.rl.model import GraphNeuralNetwork, MultilayerPerceptron
+from src.rl.architecture import GraphNeuralNetwork, MultilayerPerceptron
 from src.rl.params import GnnParams
 
 from src.utils import initialize_logger, REPAIR_LEVEL
 
-from src.mip.model import Model, VarType, Sense, DomainChange, Variable
+from src.mip.model import VarType, Sense, DomainChange, Variable
 
 initialize_logger(level=REPAIR_LEVEL)
-
 
 
 class TestLearnableRepairWalk(TestCase):
@@ -28,7 +28,7 @@ class TestLearnableRepairWalk(TestCase):
 
     def test_violated_constraint_selection(self):
         """
-        Description of the model in scrap for June 5, 2023
+        Description of the architecture in scrap for June 5, 2023
         :return:
         """
         num_samples: int = 1_000
@@ -36,8 +36,8 @@ class TestLearnableRepairWalk(TestCase):
         self._logger.info('starting test rng_seed=%d', rng_seed)
         random.seed(rng_seed)
 
-        # create the model
-        model = Model()
+        # create the architecture
+        model = EnhancedModel()
 
         x_id: int = model.add_var(variable_type=VarType.BINARY)
         y_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -69,7 +69,7 @@ class TestLearnableRepairWalk(TestCase):
         cons_scoring_function = MultilayerPerceptron([num_learned_node_features,
                                                       64,
                                                       1])
-        var_scoring_function = MultilayerPerceptron([2*num_learned_node_features + num_edge_features,
+        var_scoring_function = MultilayerPerceptron([2 * num_learned_node_features + num_edge_features,
                                                      64,
                                                      1])
 
@@ -78,14 +78,14 @@ class TestLearnableRepairWalk(TestCase):
                                            var_scoring_function)
 
         gnn = GraphNeuralNetwork(GnnParams)
-        fprl = FixPropRepairLearn(gnn,
-                                  repair_strat,
+        fprl = FixPropRepairLearn(repair_strat,
                                   LinearConstraintPropagator())
 
         x_change = DomainChange.create_fixing(x, x.lb)
         z_change = DomainChange.create_fixing(z, z.lb)
         model.apply_domain_changes(x_change, z_change)
-        fprl.update(model)
+        model.gnn = gnn
+        model.update()
         self.assertTrue(model.violated)
 
         # test that the first constraint is ignored
@@ -127,8 +127,15 @@ class TestLearnableRepairWalk(TestCase):
         self._logger.info('starting test rng_seed=%d', rng_seed)
         random.seed(rng_seed)
 
-        # create the model
-        model = Model()
+        num_learned_node_features = GnnParams.intermediate_layers
+
+        cons_scoring_function = MultilayerPerceptron([num_learned_node_features,
+                                                      64,
+                                                      1])
+        gnn = GraphNeuralNetwork(GnnParams)
+
+        # create the architecture
+        model = EnhancedModel(gnn)
 
         x_id: int = model.add_var(variable_type=VarType.BINARY)
         y_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -154,39 +161,20 @@ class TestLearnableRepairWalk(TestCase):
         model.init()
         self.assertFalse(model.violated)
 
-        num_learned_node_features = GnnParams.intermediate_layers
-        num_edge_features = GnnParams.num_edge_features
-
-        cons_scoring_function = MultilayerPerceptron([num_learned_node_features,
-                                                      64,
-                                                      1])
-        var_scoring_function = MultilayerPerceptron([2*num_learned_node_features + num_edge_features,
-                                                     64,
-                                                     1])
-
-        repair_strat = LearnableRepairWalk(RepairWalkParams(),
-                                           cons_scoring_function,
-                                           var_scoring_function)
-
-        gnn = GraphNeuralNetwork(GnnParams)
-        fprl = FixPropRepairLearn(gnn,
-                                  repair_strat,
-                                  LinearConstraintPropagator())
-
         x_change = DomainChange.create_fixing(x, x.lb)
         z_change = DomainChange.create_fixing(z, z.lb)
         model.apply_domain_changes(x_change, z_change)
-        fprl.update(model)
+        model.update()
         self.assertTrue(model.violated)
 
         # try to see if we can force the network to prefer cons 1
-        num_samples: int = 100
-        learning_rate: float = 0.5
+        num_training_iters: int = 100
+        learning_rate: float = 1.0
 
         cons_idx = 2
-        cons_feat = fprl._cons_features[cons_idx]
+        cons_feat = model.cons_features[cons_idx]
         other_idx = 1
-        other_feat = fprl._cons_features[other_idx]
+        other_feat = model.cons_features[other_idx]
 
         features = torch.stack((cons_feat, other_feat))
         scores = cons_scoring_function(features)
@@ -194,7 +182,7 @@ class TestLearnableRepairWalk(TestCase):
         print('before "training"')
         print(probabilities)
 
-        for i in range(num_samples):
+        for i in range(num_training_iters):
             cons_scoring_function.zero_grad()
             scores = cons_scoring_function(features)
             probabilities = torch.softmax(scores, dim=0)
@@ -202,8 +190,10 @@ class TestLearnableRepairWalk(TestCase):
             out.backward(retain_graph=True)
             for param in cons_scoring_function.parameters():
                 grad = param.grad
+                if grad is None:
+                    continue
                 with torch.no_grad():
-                    torch.add(param, learning_rate*grad, out=param)
+                    torch.add(param, learning_rate * grad, out=param)
 
         print('after "training"')
         scores = cons_scoring_function(features)

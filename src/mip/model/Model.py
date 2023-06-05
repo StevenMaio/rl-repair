@@ -1,5 +1,5 @@
 """
-This model wraps around a gurobipy.Model instance. Also performs some sorting
+This architecture wraps around a gurobipy.Model instance. Also performs some sorting
 on the variables so that the binary variables appear first (this makes life
 easier when implementing Fix-Prop-Repair).
 
@@ -255,7 +255,7 @@ class Model:
 
     def init(self):
         """
-        Initializes the model: computes the activities of the constraints, and
+        Initializes the architecture: computes the activities of the constraints, and
         sets the values of coefficient_sign for integer values. Also converts
         all GE inequalities to LE inequalities.
         :return:
@@ -307,7 +307,7 @@ class Model:
         :return: a Model instance wrapping gurobi_model
         """
         logger: logging.Logger = logging.getLogger(__package__)
-        logger.info('creating model from gurobipy.Model')
+        logger.info('creating architecture from gurobipy.Model')
         model = Model()
         model._gp_model = gp_model
 
@@ -365,3 +365,7 @@ class Model:
                     model._num_continuous_variables,
                     model._num_constraints)
         return model
+
+    def update(self):
+        # this does nothing in the base class
+        ...

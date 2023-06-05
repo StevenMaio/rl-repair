@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from src.rl.graph import Graph
-from src.rl.model import MultilayerPerceptron
+from src.rl.architecture import MultilayerPerceptron
 
 from itertools import chain
 

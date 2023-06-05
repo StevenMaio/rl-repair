@@ -15,7 +15,7 @@ class TestModel(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # initialize model based on one from a Coursera course
+        # initialize architecture based on one from a Coursera course
         logger: logging.Logger = logging.getLogger(__package__)
 
         env = gp.Env()

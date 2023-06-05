@@ -66,7 +66,7 @@ class RandomFixingOrder(FixingOrderStrategy):
         # previous_index: int = self._current_index
         # previous_increment: int = self._last_increment
         # while self._current_index < self._size:
-        #     var: "Variable" = model.get_var(self._current_index)
+        #     var: "Variable" = architecture.get_var(self._current_index)
         #     if var.lb == var.ub:
         #         self._current_index += 1
         #     else:
@@ -114,7 +114,7 @@ class LeftRightOrder(FixingOrderStrategy):
         # self._last_increment = 0
         # while self._current_index < self._size:
         #     self._last_increment += 1
-        #     var: "Variable" = model.get_var(self._current_index)
+        #     var: "Variable" = architecture.get_var(self._current_index)
         #     if var.lb == var.ub:
         #         self._current_index += 1
         #     else:

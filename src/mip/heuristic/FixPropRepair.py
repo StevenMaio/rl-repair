@@ -116,9 +116,9 @@ class FixPropRepair:
         child fixes to the node ot the upper or lower bound, and the other child
         fixes the variable to the opposite bound?
 
-        In the event that all integral variables have been fixed and the model
+        In the event that all integral variables have been fixed and the architecture
         has continuous variables, then the LP which results from the fixings
-        will be solved. This requires model has been initialized from a gurobipy.Model
+        will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
         :param model:
         :return:
@@ -167,7 +167,7 @@ class FixPropRepair:
     def handle_continuous_variables(self, model: Model) -> bool:
         # solve the resulting LP to find a solution
         gp_model: gurobipy.Model = model.get_gurobi_model()
-        self._logger.info("Gurobi model found. Solving LP")
+        self._logger.info("Gurobi architecture found. Solving LP")
         var: Variable
         for var in model.variables:
             gp_var: gurobipy.Var = var.get_gurobi_var()

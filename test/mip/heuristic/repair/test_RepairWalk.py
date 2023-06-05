@@ -34,7 +34,7 @@ class TestRepairWalk(TestCase):
 
     def test_simple_shift(self):
         """
-        This test tests the model x_1 + x_2 == 1 with x_1 = x_2 = 0 (x_1, x_2
+        This test tests the architecture x_1 + x_2 == 1 with x_1 = x_2 = 0 (x_1, x_2
         are binary variables). One of the variables should be shifted to 1, and
         the list of repair changes should contain one element.
         """

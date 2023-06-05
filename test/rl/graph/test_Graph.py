@@ -13,7 +13,7 @@ from src.mip.model import *
 from src.rl.graph import Graph
 from src.rl.params import GnnParams
 from src.rl.graph.Node import FeatIdx
-from src.rl.model import GraphNeuralNetwork, MultilayerPerceptron
+from src.rl.architecture import GraphNeuralNetwork, MultilayerPerceptron
 
 
 class TestGraph(TestCase):

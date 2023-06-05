@@ -1,6 +1,6 @@
 import torch
 
-from src.rl.model import MultilayerPerceptron
+from src.rl.architecture import MultilayerPerceptron
 
 
 def concat_experiment1():
