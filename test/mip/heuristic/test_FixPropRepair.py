@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mip.params import RepairWalkParams
+from src.mip.params import RepairWalkParams
 from src.mip.heuristic import FixPropRepair
 from src.mip.model import *
 from src.mip.propagation import LinearConstraintPropagator

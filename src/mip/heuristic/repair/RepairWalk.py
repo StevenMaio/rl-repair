@@ -61,7 +61,7 @@ class RepairWalk(RepairStrategy):
         shift_history = CircularList(self._history_size)
         for iter_num in range(self._max_iterations):
             cons = self._sample_violated_constraint(model)
-            var, domain_change = self._sample_shift_candidate(model, cons)
+            var, domain_change = self._select_shift_candidate(model, cons)
             if var is None or domain_change in shift_history:
                 continue
             self._logger.log(REPAIR_LEVEL,
@@ -99,12 +99,11 @@ class RepairWalk(RepairStrategy):
                 model.apply_domain_changes(*best_repair_changes, undo=True)
         return success
 
-    @staticmethod
-    def _sample_violated_constraint(model: "Model") -> "Constraint":
+    def _sample_violated_constraint(self, model: "Model") -> "Constraint":
         violated_constraints = list(filter(lambda c: c.is_violated(), model.constraints))
         return random.choice(violated_constraints)
 
-    def _sample_shift_candidate(self,
+    def _select_shift_candidate(self,
                                 model: "Model",
                                 constraint: "Constraint") -> Tuple["Variable", "DomainChange"]:
         shift_candidates = []
@@ -131,12 +130,12 @@ class RepairWalk(RepairStrategy):
                 shift_candidates.append((var, shifted_domain, shift_damage))
         if has_plateau_move:
             plateau_moves = list(filter(lambda t: t[2] == 0, shift_candidates))
-            var, new_domain, _ = random.choice(plateau_moves)
+            var, new_domain = self._sample_var_candidate(constraint, plateau_moves)
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
             return var, domain_change
         elif len(shift_candidates) > 0:
             if random.random() <= self._noise_parameter:
-                var, new_domain, _ = random.choice(shift_candidates)
+                var, new_domain = self._sample_var_candidate(constraint, shift_candidates)
             else:
                 var, new_domain, _ = min(shift_candidates, key=lambda t: t[2])
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
@@ -222,6 +221,15 @@ class RepairWalk(RepairStrategy):
                 return False, 0
         else:
             raise Exception("Sense.GE not supported")
+
+    def _sample_var_candidate(self, constraint, candidates):
+        """
+
+        :param candidates:
+        :return:
+        """
+        var, new_domain, _ = random.choice(candidates)
+        return var, new_domain
 
     @staticmethod
     def _determine_binary_var_shift_amount(cons: "Constraint",

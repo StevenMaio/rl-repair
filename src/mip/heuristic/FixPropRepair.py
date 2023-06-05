@@ -155,21 +155,25 @@ class FixPropRepair:
         if success:
             self._logger.info("feasible integer variable fixing found")
             if model.num_continuous_variables > 0:
-                # solve the resulting LP to find a solution
-                gp_model: gurobipy.Model = model.get_gurobi_model()
-                self._logger.info("Gurobi model found. Solving LP")
-                var: Variable
-                for var in model.variables:
-                    gp_var: gurobipy.Var = var.get_gurobi_var()
-                    gp_var.lb = var.lb
-                    gp_var.ub = var.ub
-                gp_model.optimize()
-                status: int = gp_model.status
-                success = (status == GRB.OPTIMAL)
+                success = self.handle_continuous_variables(model)
                 if success:
                     self._logger.info("Solution found")
                 else:
                     self._logger.info("No solution found")
         else:
             self._logger.info('no feasible integer variable fixing found')
+        return success
+
+    def handle_continuous_variables(self, model: Model) -> bool:
+        # solve the resulting LP to find a solution
+        gp_model: gurobipy.Model = model.get_gurobi_model()
+        self._logger.info("Gurobi model found. Solving LP")
+        var: Variable
+        for var in model.variables:
+            gp_var: gurobipy.Var = var.get_gurobi_var()
+            gp_var.lb = var.lb
+            gp_var.ub = var.ub
+        gp_model.optimize()
+        status: int = gp_model.status
+        success = (status == GRB.OPTIMAL)
         return success

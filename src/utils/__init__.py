@@ -1,7 +1,10 @@
 import logging
 import sys
+from enum import IntEnum
 
 import random
+
+from .constants import VAR_NODE, CONS_NODE
 
 # logging constants -- should we do more with the levels?
 LOGGER_INITIALIZED: bool = False
@@ -34,7 +37,7 @@ def range_permutation(n: int) -> list[int]:
     numbers: list[int] = list(range(n))
     i: int
     for i in range(n):
-        j: int = random.randint(i, n-1)
+        j: int = random.randint(i, n - 1)
         numbers[i], numbers[j] = numbers[j], numbers[i]
     return numbers
 
@@ -51,3 +54,10 @@ def compute_interval_distance(lb, ub, x):
         return 0
     else:
         return min(abs(x - lb), abs(x - ub))
+
+
+class IndexEnum(IntEnum):
+
+    def _generate_next_value_(name, start, count, last_values):
+        start = 0
+        return IntEnum._generate_next_value_(name, start, count, last_values)
