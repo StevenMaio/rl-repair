@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List, Tuple
 
 import random
 
@@ -7,7 +8,7 @@ class ValueFixingStrategy(ABC):
     name: str = "AbstractValueFixingStrategy"
 
     @abstractmethod
-    def select_fixing_value(self, model: "Model", var: "Variable") -> tuple[int, int]:
+    def select_fixing_value(self, model: "Model", var: "Variable") -> Tuple[int, int]:
         """
         Determines the branching values to which the variable will be fixed.
         Returns a list [a, b] such that a and b are the branching values.
@@ -21,7 +22,7 @@ class ValueFixingStrategy(ABC):
 class RandomValueFixing(ValueFixingStrategy):
     name: str = "RandomValueFixing"
 
-    def select_fixing_value(self, model: "Model", var: "Variable") -> tuple[int, int]:
+    def select_fixing_value(self, model: "Model", var: "Variable") -> Tuple[int, int]:
         local_domain: "Domain" = var.local_domain
         lower_bound: int = int(local_domain.lower_bound)
         upper_bound: int = int(local_domain.upper_bound)
@@ -35,6 +36,6 @@ class RandomValueFixing(ValueFixingStrategy):
 class UpperBoundFirst(ValueFixingStrategy):
     name: str = "UpperBoundFirst"
 
-    def select_fixing_value(self, model: "Model", var: "Variable") -> tuple[int, int]:
+    def select_fixing_value(self, model: "Model", var: "Variable") -> Tuple[int, int]:
         return var.ub, var.lb
 

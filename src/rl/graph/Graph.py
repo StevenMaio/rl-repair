@@ -1,15 +1,16 @@
 from src.mip.model import Model
 
 from itertools import chain
+from typing import List
 
 from src.rl.graph.Node import Node, NodeType
 from src.rl.graph.Edge import Edge
 
 
 class Graph:
-    _var_nodes: list[Node]
-    _cons_nodes: list[Node]
-    _edges: list[Edge]
+    _var_nodes: List[Node]
+    _cons_nodes: List[Node]
+    _edges: List[Edge]
 
     def __init__(self, model: Model):
         self._var_nodes = []
@@ -29,17 +30,17 @@ class Graph:
                 self._edges.append(e)
 
     @property
-    def var_nodes(self) -> list[Node]:
+    def var_nodes(self) -> List[Node]:
         return self._var_nodes
 
     @property
-    def cons_nodes(self) -> list[Node]:
+    def cons_nodes(self) -> List[Node]:
         return self._cons_nodes
 
     @property
-    def edges(self) -> list[Edge]:
+    def edges(self) -> List[Edge]:
         return self._edges
 
-    def update(self):
+    def update(self, model):
         for u in chain(self._var_nodes, self._cons_nodes):
-            u.update()
+            u.update(model)

@@ -1,17 +1,13 @@
-from typing import Tuple
-
-
-class Variable:
-    ...
+from typing import Tuple, List
 
 
 class Column:
-    _var: Variable
+    _var: "Variable"
     _size: int
-    _indices: list[int]
-    _coefficients: list[float]
+    _indices: List[int]
+    _coefficients: List[float]
 
-    def __init__(self, var: Variable):
+    def __init__(self, var: "Variable"):
         self._var = var
         self._size = 0
         self._indices = []

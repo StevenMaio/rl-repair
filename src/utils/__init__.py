@@ -1,6 +1,7 @@
 import logging
 import sys
 from enum import IntEnum
+from typing import List
 
 import random
 
@@ -26,7 +27,7 @@ def initialize_logger(filename: str = '',
         logging.addLevelName(REPAIR_LEVEL, REPAIR_NAME)
 
 
-def range_permutation(n: int) -> list[int]:
+def range_permutation(n: int) -> List[int]:
     """
     Generates a permutation of the integers from 0 to n-1
 
@@ -34,7 +35,7 @@ def range_permutation(n: int) -> list[int]:
     :param n:
     :return:
     """
-    numbers: list[int] = list(range(n))
+    numbers: List[int] = list(range(n))
     i: int
     for i in range(n):
         j: int = random.randint(i, n - 1)

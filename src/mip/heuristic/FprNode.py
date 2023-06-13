@@ -1,8 +1,11 @@
+from typing import List
+
+
 class FprNode:
     _parent: "FprNode"
     _left: "FprNode"
     _right: "FprNode"
-    _domain_changes: list["DomainChange"]
+    _domain_changes: List["DomainChange"]
     _visited: bool
     _fixed_var_id: int
     _depth: int

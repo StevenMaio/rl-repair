@@ -47,6 +47,9 @@ class Domain:
         singleton = Domain(value, value)
         return singleton
 
+    def size(self) -> float:
+        return self._upper_bound - self._lower_bound
+
 
 Domain.EMPTY_DOMAIN = -1
 

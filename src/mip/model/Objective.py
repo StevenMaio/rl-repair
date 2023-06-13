@@ -1,5 +1,7 @@
 from enum import Enum, auto
 
+from typing import List
+
 
 class ObjSense(Enum):
     MAXIMIZE = auto()
@@ -7,14 +9,14 @@ class ObjSense(Enum):
 
 
 class Objective:
-    _var_indices: list[int]
-    _coefficients: list[float]
+    _var_indices: List[int]
+    _coefficients: List[float]
     _sense: ObjSense
     _size: int
 
     def __init__(self,
-                 var_indices: list[int],
-                 coefficients: list[float],
+                 var_indices: List[int],
+                 coefficients: List[float],
                  sense: ObjSense = ObjSense.MINIMIZE):
         assert len(var_indices) == len(coefficients)
         self._var_indices = var_indices

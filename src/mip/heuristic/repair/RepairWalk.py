@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable, Tuple, List
 
 from .RepairStrategy import RepairStrategy
 
@@ -52,10 +52,10 @@ class RepairWalk(RepairStrategy):
 
     def repair_domain(self,
                       model: "Model",
-                      repair_changes: list["DomainChange"]):
+                      repair_changes: List["DomainChange"]):
         best_violation_score: float = self._violation_scorer(model)
-        best_repair_changes: list["DomainChange"] = []
-        reset_changes: list["DomainChange"] = []
+        best_repair_changes: List["DomainChange"] = []
+        reset_changes: List["DomainChange"] = []
         soft_reset_counter: int = 0
         success: bool = False
         shift_history = CircularList(self._history_size)

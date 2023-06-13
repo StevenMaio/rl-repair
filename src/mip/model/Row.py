@@ -1,17 +1,13 @@
-from typing import Tuple
-
-
-class Constraint:
-    ...
+from typing import Tuple, List
 
 
 class Row:
-    _constraint: Constraint
+    _constraint: "Constraint"
     _size: int
-    _indices: list[int]
-    _coefficients: list[float]
+    _indices: List[int]
+    _coefficients: List[float]
 
-    def __init__(self, constraint: Constraint):
+    def __init__(self, constraint: "Constraint"):
         self._constraint = constraint
         self._size = 0
         self._indices = []

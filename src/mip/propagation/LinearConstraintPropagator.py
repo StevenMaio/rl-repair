@@ -8,6 +8,8 @@ TODO:
 from .Propagator import Propagator
 from ..model import *
 
+from typing import List
+
 import math
 
 
@@ -16,7 +18,7 @@ class LinearConstraintPropagator(Propagator):
     def propagate(self,
                   model: Model,
                   constraint: Constraint,
-                  domain_changes: list[DomainChange]):
+                  domain_changes: List[DomainChange]):
         """
         Deduces domain changes based on the min/max activity of the given
         constraint. The deduced domain changes are added to domain_changes.

@@ -1,7 +1,8 @@
 import logging
-
 import gurobipy
 import torch
+
+from typing import List
 
 from src.mip.model import Variable, VarType, Constraint, Column, Row
 from src.mip.model import Model
@@ -13,9 +14,12 @@ from src.rl.graph import Graph
 class EnhancedModel(Model):
     _instance_graph: Graph
     _gnn: GraphNeuralNetwork
-    _var_features: list[torch.Tensor]
-    _cons_features: list[torch.Tensor]
+    _var_features: List[torch.Tensor]
+    _cons_features: List[torch.Tensor]
     _initialized: bool
+
+    # fields which are used to update nodes
+    _largest_cons_size: int
 
     def __init__(self, gnn: GraphNeuralNetwork = None):
         super().__init__()
@@ -32,13 +36,15 @@ class EnhancedModel(Model):
             super().init()
             self._instance_graph = Graph(self)
             self._initialized = True
+            largest_cons_size = max(map(lambda c: c.row.size, self.constraints))
+            self._largest_cons_size = largest_cons_size
 
     def update(self):
         """
         Update the current node representations and compute a graph convolution.
         :return:
         """
-        self._instance_graph.update()
+        self._instance_graph.update(self)
         self._var_features, self._cons_features = self._gnn(self._instance_graph)
 
     @property
@@ -50,11 +56,11 @@ class EnhancedModel(Model):
         self._gnn = new_value
 
     @property
-    def var_features(self) -> list[torch.Tensor]:
+    def var_features(self) -> List[torch.Tensor]:
         return self._var_features
 
     @property
-    def cons_features(self) -> list[torch.Tensor]:
+    def cons_features(self) -> List[torch.Tensor]:
         return self._cons_features
 
     @staticmethod
@@ -124,6 +130,8 @@ class EnhancedModel(Model):
         model._instance_graph = Graph(model)
         model._initialized = True
         model._violated = violated
+        largest_cons_size = max(map(lambda c: c.row.size, model.constraints))
+        model._largest_cons_size = largest_cons_size
         logger.info('num_vars=%d num_bin=%d num_int=%d num_cont=%d num_constrs=%d',
                     model._num_variables,
                     model._num_binary_variables,
@@ -131,3 +139,7 @@ class EnhancedModel(Model):
                     model._num_continuous_variables,
                     model._num_constraints)
         return model
+
+    @property
+    def largest_cons_size(self):
+        return self._largest_cons_size

@@ -8,6 +8,8 @@ TODO:
 Author: Steven Maio
 """
 import random
+
+from typing import List
 from abc import ABC, abstractmethod
 
 from src.mip.model import VarType, Variable
@@ -44,7 +46,7 @@ class RandomFixingOrder(FixingOrderStrategy):
 
     _size: int
     _current_index: int
-    _indices: list[int]
+    _indices: List[int]
 
     def __init__(self, model: "Model"):
         self._indices = []
@@ -96,7 +98,7 @@ class LeftRightOrder(FixingOrderStrategy):
     name: str = "LeftRightOrder"
 
     _current_index: int
-    _indices: list[int]
+    _indices: List[int]
     _size: int
 
     def __init__(self, model: "Model"):

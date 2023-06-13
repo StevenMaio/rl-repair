@@ -21,6 +21,8 @@ from .Domain import *
 
 from src.utils.constants import MAX_ABSOLUTE_VALUE
 
+from typing import List
+
 
 class Model:
     _gp_model: gurobipy.Model
@@ -29,8 +31,8 @@ class Model:
     _num_integer_variables: int
     _num_continuous_variables: int
     _num_constraints: int
-    _variables: list[Variable]
-    _constraints: list[Constraint]
+    _variables: List[Variable]
+    _constraints: List[Constraint]
     _objective: Objective
     _initialized: bool
     _violated: bool
@@ -70,8 +72,8 @@ class Model:
         return var.id
 
     def add_constraint(self,
-                       var_indices: list[int],
-                       coefficients: list[float],
+                       var_indices: List[int],
+                       coefficients: List[float],
                        rhs: float,
                        sense: Sense = Sense.LE) -> int:
         constraint = Constraint(self._num_constraints,
@@ -101,8 +103,8 @@ class Model:
         return c_id
 
     def set_objective(self,
-                      var_indices: list[int],
-                      coefficients: list[float],
+                      var_indices: List[int],
+                      coefficients: List[float],
                       sense: ObjSense = ObjSense.MINIMIZE):
         objective = Objective(var_indices, coefficients, sense)
         self._objective = objective
@@ -243,11 +245,11 @@ class Model:
         self._violated = new_value
 
     @property
-    def constraints(self) -> list[Constraint]:
+    def constraints(self) -> List[Constraint]:
         return self._constraints
 
     @property
-    def variables(self) -> list[Variable]:
+    def variables(self) -> List[Variable]:
         return self._variables
 
     def get_gurobi_model(self) -> gurobipy.Model:

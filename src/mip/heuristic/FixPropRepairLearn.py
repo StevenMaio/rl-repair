@@ -1,5 +1,6 @@
-import torch
+from typing import List, Tuple
 
+import torch
 import random
 
 from src.rl.params import GnnParams
@@ -67,7 +68,7 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
         self._scoring_function = scoring_function
         self._sample_index = sample_index
 
-    def select_fixing_value(self, model: "EnhancedModel", var: "Variable") -> tuple[int, int]:
+    def select_fixing_value(self, model: "EnhancedModel", var: "Variable") -> Tuple[int, int]:
         idx = var.id
         features = model.var_features[idx]
         score = self._scoring_function(features)
@@ -115,7 +116,7 @@ class FixPropRepairLearn(FixPropRepair):
                          repair,
                          backtrack_on_infeasibility)
 
-    def find_solution(self, model: EnhancedModel):
+    def find_solution(self, model: EnhancedModel, output_file=None):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -128,12 +129,13 @@ class FixPropRepairLearn(FixPropRepair):
         will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
         :param model:
+        :param output_file: location to save solution
         :return:
         """
         if not model.initialized:
             raise Exception("Model has not yet been initialized")
         root = FprNode()
-        search_stack: list[FprNode] = [root]
+        search_stack: List[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
 
