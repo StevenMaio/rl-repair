@@ -7,6 +7,7 @@ from src.rl.architecture import MultilayerPerceptron, PolicyArchitecture
 from src.mip.model import VarType
 
 from src.rl.mip import EnhancedModel
+from src.rl.utils import ActionHistory, ActionType
 
 from src.mip.heuristic.repair import RepairStrategy
 from src.mip.propagation import Propagator
@@ -15,6 +16,7 @@ from src.mip.heuristic import FixPropRepair
 from .FprNode import FprNode
 from .FixingOrderStrategy import FixingOrderStrategy
 from .ValueFixingStrategy import ValueFixingStrategy
+from ..model import Variable, Column, DomainChange, Constraint
 
 
 class _FprlFixingOrderStrategy(FixingOrderStrategy):
@@ -91,6 +93,8 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
 
 class FixPropRepairLearn(FixPropRepair):
     _policy_architecture: PolicyArchitecture
+    _action_history: ActionHistory
+    _in_training: bool
 
     def __init__(self,
                  fixing_order_architecture,
@@ -103,7 +107,8 @@ class FixPropRepairLearn(FixPropRepair):
                  propagate_fixings: bool = True,
                  repair: bool = True,
                  backtrack_on_infeasibility: bool = True,
-                 sample_indices: bool = True):
+                 sample_indices: bool = True,
+                 in_training: bool = False):
         fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_architecture,
                                                          sample_index=sample_indices)
         value_fixing_strategy = _FprlValueSelectionStrategy(value_fixing_architecture,
@@ -118,6 +123,10 @@ class FixPropRepairLearn(FixPropRepair):
                          repair,
                          backtrack_on_infeasibility)
         self._policy_architecture = policy_architecture
+        self._action_history = ActionHistory(in_training)
+        self._in_training = in_training
+        if in_training:
+            repair_strategy._action_history = self._action_history
 
     def find_solution(self, model: EnhancedModel, solution_filename=None):
         """
@@ -137,6 +146,7 @@ class FixPropRepairLearn(FixPropRepair):
         """
         if not model.initialized:
             raise Exception("Model has not yet been initialized")
+        self._action_history.clear()
         root = FprNode()
         search_stack: List[FprNode] = [root]
         success: bool = False
@@ -184,3 +194,74 @@ class FixPropRepairLearn(FixPropRepair):
     @property
     def policy_architecture(self) -> PolicyArchitecture:
         return self._policy_architecture
+
+    def _find_solution_helper_node_loop(self,
+                                        model: EnhancedModel,
+                                        head: FprNode) -> bool:
+        """
+        Helper method that contains the inner loop logic of FPR
+        """
+        head.visited = True
+        infeasible: bool = False
+        if head.depth > 0:
+            model.apply_domain_changes(*head.domain_changes)
+            infeasible = model.violated
+            if not infeasible and self._propagate_fixings:
+                var_id: int = head.fixed_var_id
+                fixed_var: Variable = model.get_var(var_id)
+                column: Column = fixed_var.column
+                i: int
+                propagation_changes: list[DomainChange] = []
+                for i in range(column.size):
+                    constraint: Constraint = model.get_constraint(column.get_constraint_index(i))
+                    self._propagator.propagate(model, constraint, propagation_changes)
+
+                # apply the deduced domain changes from propagation
+                model.apply_domain_changes(*propagation_changes)
+                head.domain_changes.extend(propagation_changes)
+                propagation_changes.clear()
+                infeasible = model.violated
+        if infeasible and self._repair:
+            self._logger.debug("starting repair")
+            repair_changes: list[DomainChange] = []
+            success: bool = self._repair_strategy.repair_domain(model, repair_changes)
+            self._logger.debug("repair success=%d", success)
+            self._reward *= pow(self._discount_factor, self._repair_strategy.num_moves)
+            if success:
+                head.domain_changes.extend(
+                    repair_changes)  # append the repair changes to the current node for backtracking
+                repair_changes.clear()
+                infeasible = False
+        if infeasible and self._backtrack_on_infeasibility:
+            return False
+        next_var: Variable = self._fixing_order_strategy.select_variable(model)
+        if next_var is not None:
+            left_val, right_val = self._value_fixing_strategy.select_fixing_value(model, next_var)
+            if left_val == next_var.lb:
+                self._action_history.add((next_var.id, 0), ActionType.FIXING)
+            else:
+                self._action_history.add((next_var.id, 1), ActionType.FIXING)
+
+            left_fixing: DomainChange = DomainChange.create_fixing(next_var, left_val)
+            left = FprNode(head, next_var.id, left_fixing)
+            head.left = left
+
+            right_fixing: DomainChange = DomainChange.create_fixing(next_var, right_val)
+            right = FprNode(head, next_var.id, right_fixing)
+            head.right = right
+            return False
+        else:
+            return not model.violated
+
+    @property
+    def action_history(self):
+        return self._action_history
+
+    @property
+    def in_training(self):
+        return self._in_training
+
+    @in_training.setter
+    def in_training(self, other):
+        self._in_training = other
+        self._action_history._in_training = other

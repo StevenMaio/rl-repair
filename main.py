@@ -92,7 +92,7 @@ def main2():
 def main3():
     # get training instances
     instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)]
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:1]
     input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique.pt'
     policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique.pt'
     initialize_logger(level=logging.INFO)
@@ -110,11 +110,12 @@ def main3():
                               repair_strat,
                               LinearConstraintPropagator(),
                               policy_architecture,
-                              sample_indices=sample_indices)
+                              sample_indices=sample_indices,
+                              in_training=True)
 
     # configure training algorithm
-    num_epochs = 25
-    num_trajectories = 10
+    num_epochs = 1
+    num_trajectories = 1
     learning_parameter = 5
     learning_algorithm = EvolutionaryStrategies(num_epochs,
                                                 num_trajectories,
@@ -123,6 +124,7 @@ def main3():
         learning_algorithm.train(fprl, instances)
         print(learning_algorithm._num_successes)
     torch.save(policy_architecture.state_dict(), policy_output)
+    print(fprl.action_history.moves)
 
 
 if __name__ == '__main__':

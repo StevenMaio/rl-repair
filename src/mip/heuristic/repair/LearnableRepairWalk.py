@@ -1,9 +1,9 @@
-import gurobipy
 import torch
 
 from .RepairWalk import RepairWalk
 
 from src.rl.architecture import MultilayerPerceptron
+from src.rl.utils import ActionType, ActionHistory
 
 
 class LearnableRepairWalk(RepairWalk):
@@ -16,6 +16,8 @@ class LearnableRepairWalk(RepairWalk):
     _var_scoring_function: MultilayerPerceptron
     _cons_scoring_function: MultilayerPerceptron
 
+    _action_history: ActionHistory
+
     def __init__(self,
                  params: "RepairWalkParams",
                  cons_scoring_function: MultilayerPerceptron,
@@ -26,6 +28,7 @@ class LearnableRepairWalk(RepairWalk):
         self._var_scoring_function = var_scoring_function
         self._cons_scoring_function = cons_scoring_function
         self._sample_indices = sample_indices
+        self._action_history = None
 
     def _sample_violated_constraint(self, model: "EnhancedModel") -> "Constraint":
         cons_ids = []
@@ -63,6 +66,8 @@ class LearnableRepairWalk(RepairWalk):
         else:
             idx = torch.argmax(scores)
         var, domain_change, _ = candidates[idx]
+        if self._action_history is not None:
+            self._action_history.add((cons.id, var.id), ActionType.REPAIR)
         return var, domain_change
 
     def _create_shift_candidate_feature(self, model, cons_features, var, domain_change, shift_damage):
