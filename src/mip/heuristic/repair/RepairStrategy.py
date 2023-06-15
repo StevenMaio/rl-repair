@@ -17,3 +17,7 @@ class RepairStrategy(ABC):
         :return:
         """
         ...
+
+    @property
+    def num_moves(self):
+        raise NotImplementedError("not implemented")

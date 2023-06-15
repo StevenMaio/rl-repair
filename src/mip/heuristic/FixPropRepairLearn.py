@@ -3,8 +3,7 @@ from typing import List, Tuple
 import torch
 import random
 
-from src.rl.params import GnnParams
-from src.rl.architecture import MultilayerPerceptron
+from src.rl.architecture import MultilayerPerceptron, PolicyArchitecture
 from src.mip.model import VarType
 
 from src.rl.mip import EnhancedModel
@@ -91,32 +90,36 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
 
 
 class FixPropRepairLearn(FixPropRepair):
+    _policy_architecture: PolicyArchitecture
 
     def __init__(self,
+                 fixing_order_architecture,
+                 value_fixing_architecture,
                  repair_strategy: RepairStrategy,
                  propagator: Propagator,
+                 policy_architecture,
+                 discount_factor: float = 0.999,
                  max_absolute_value: float = float('inf'),
                  propagate_fixings: bool = True,
                  repair: bool = True,
-                 backtrack_on_infeasibility: bool = True):
-        fixing_order_mlp = MultilayerPerceptron([GnnParams.intermediate_layers,
-                                                 2 * GnnParams.intermediate_layers,
-                                                 1])
-        fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_mlp)
-        value_fixing_mlp = MultilayerPerceptron([GnnParams.intermediate_layers,
-                                                 2 * GnnParams.intermediate_layers,
-                                                 1])
-        value_fixing_strategy = _FprlValueSelectionStrategy(value_fixing_mlp)
+                 backtrack_on_infeasibility: bool = True,
+                 sample_indices: bool = True):
+        fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_architecture,
+                                                         sample_index=sample_indices)
+        value_fixing_strategy = _FprlValueSelectionStrategy(value_fixing_architecture,
+                                                            sample_index=sample_indices)
         super().__init__(fixing_order_strategy,
                          value_fixing_strategy,
                          repair_strategy,
                          propagator,
+                         discount_factor,
                          max_absolute_value,
                          propagate_fixings,
                          repair,
                          backtrack_on_infeasibility)
+        self._policy_architecture = policy_architecture
 
-    def find_solution(self, model: EnhancedModel, output_file=None):
+    def find_solution(self, model: EnhancedModel, solution_filename=None):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -128,8 +131,8 @@ class FixPropRepairLearn(FixPropRepair):
         has continuous variables, then the LP which results from the fixings
         will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
+        :param solution_filename:
         :param model:
-        :param output_file: location to save solution
         :return:
         """
         if not model.initialized:
@@ -138,11 +141,13 @@ class FixPropRepairLearn(FixPropRepair):
         search_stack: List[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
+        self._reward = 1 / self._discount_factor
 
         while len(search_stack) > 0 and continue_dive:
             node: FprNode = search_stack[-1]
             if not node.visited:
                 model.update()
+                self._reward *= self._discount_factor
                 success: bool = self._find_solution_helper_node_loop(model, node)
                 if success:
                     continue_dive = False
@@ -163,13 +168,19 @@ class FixPropRepairLearn(FixPropRepair):
                         self._fixing_order_strategy.backtrack(model)
                     search_stack.pop()
         if success:
-            self._logger.info("feasible integer variable fixing found")
-            if model.num_continuous_variables > 0:
-                success = self.handle_continuous_variables(model)
-                if success:
-                    self._logger.info("Solution found")
-                else:
-                    self._logger.info("No solution found")
+            success = self.determine_feasibility(model)
+            if success:
+                self._logger.info("Solution found")
+                if solution_filename is not None:
+                    model.get_gurobi_model().write(solution_filename)
+            else:
+                self._reward = 0
+                self._logger.info("No solution found")
         else:
+            self._reward = 0
             self._logger.info('no feasible integer variable fixing found')
         return success
+
+    @property
+    def policy_architecture(self) -> PolicyArchitecture:
+        return self._policy_architecture

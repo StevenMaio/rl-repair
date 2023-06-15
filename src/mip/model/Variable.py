@@ -105,3 +105,9 @@ class Variable:
         variable._gp_var = gp_var
         variable._objective_coefficient = gp_var.obj
         return variable
+
+    def reset(self):
+        self._local_domain = self._global_domain
+        if self._gp_var is not None:
+            self._gp_var.ub = self.ub
+            self._gp_var.lb = self.lb

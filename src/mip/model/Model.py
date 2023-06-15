@@ -368,6 +368,27 @@ class Model:
                     model._num_constraints)
         return model
 
+    def reset(self):
+        violated = False
+        for var in self._variables:
+            var.reset()
+        for constraint in self._constraints:
+            row: Row = constraint.row
+            min_activity: float = 0
+            max_activity: float = 0
+            for index, coefficient in row:
+                var: Variable = self.get_var(index)
+                if coefficient > 0:
+                    min_activity += var.lb * coefficient
+                    max_activity += var.ub * coefficient
+                else:
+                    min_activity += var.ub * coefficient
+                    max_activity += var.lb * coefficient
+            constraint.min_activity = min_activity
+            constraint.max_activity = max_activity
+            violated |= constraint.is_violated()
+        self._violated = violated
+
     def update(self):
         # this does nothing in the base class
         ...

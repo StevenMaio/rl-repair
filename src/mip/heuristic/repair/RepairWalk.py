@@ -23,6 +23,7 @@ def num_violated_constraints(model: "Model") -> float:
 
 class RepairWalk(RepairStrategy):
     name: str = 'RepairWalk'
+    _num_moves: int
 
     # configuration
     _max_iterations: int
@@ -41,6 +42,7 @@ class RepairWalk(RepairStrategy):
         self._noise_parameter = params.noise_parameter
         self._history_size = params.history_size
         self._violation_scorer = num_violated_constraints
+        self._num_moves = 0
         self._logger = logging.getLogger(__package__)
         self._logger.setLevel(REPAIR_LEVEL)
         self._logger.log(REPAIR_LEVEL,
@@ -57,6 +59,7 @@ class RepairWalk(RepairStrategy):
         best_repair_changes: List["DomainChange"] = []
         reset_changes: List["DomainChange"] = []
         soft_reset_counter: int = 0
+        self._num_moves = 0
         success: bool = False
         shift_history = CircularList(self._history_size)
         for iter_num in range(self._max_iterations):
@@ -70,6 +73,7 @@ class RepairWalk(RepairStrategy):
                              iter_num,
                              cons,
                              domain_change)
+            self._num_moves += 1
             shift_history.add(domain_change)
             model.apply_domain_changes(domain_change)
             reset_changes.append(domain_change)
@@ -274,3 +278,7 @@ class RepairWalk(RepairStrategy):
             return (new_distance < original_distance), shift
         else:
             raise Exception("Sense.GE not supported")
+
+    @property
+    def num_moves(self) -> int:
+        return self._num_moves

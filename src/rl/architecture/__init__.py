@@ -1,2 +1,3 @@
 from .MultilayerPerceptron import MultilayerPerceptron
 from .GraphNeuralNetwork import GraphNeuralNetwork
+from .PolicyArchitecture import PolicyArchitecture

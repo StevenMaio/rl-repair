@@ -16,6 +16,9 @@ initialize_logger()
 
 
 class FixPropRepair:
+    _discount_factor: float
+    _reward: float
+
     # FPR configuration
     _propagator: Propagator
     _max_absolute_value: float
@@ -35,6 +38,7 @@ class FixPropRepair:
                  value_fixing_strategy: ValueFixingStrategy,
                  repair_strategy: RepairStrategy,
                  propagator: Propagator,
+                 discount_factor: float = 0.99,
                  max_absolute_value: float = float('inf'),
                  propagate_fixings: bool = True,
                  repair: bool = True,
@@ -54,6 +58,8 @@ class FixPropRepair:
         self._propagate_fixings = propagate_fixings
         self._repair = repair
         self._backtrack_on_infeasibility = backtrack_on_infeasibility
+        self._reward = 0
+        self._discount_factor = discount_factor
 
     def _find_solution_helper_node_loop(self,
                                         model: Model,
@@ -86,6 +92,7 @@ class FixPropRepair:
             repair_changes: list[DomainChange] = []
             success: bool = self._repair_strategy.repair_domain(model, repair_changes)
             self._logger.debug("repair success=%d", success)
+            self._reward *= pow(self._discount_factor, self._repair_strategy.num_moves)
             if success:
                 head.domain_changes.extend(
                     repair_changes)  # append the repair changes to the current node for backtracking
@@ -108,7 +115,7 @@ class FixPropRepair:
         else:
             return not model.violated
 
-    def find_solution(self, model: Model):
+    def find_solution(self, model: Model, solution_filename=None):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -120,6 +127,7 @@ class FixPropRepair:
         has continuous variables, then the LP which results from the fixings
         will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
+        :param solution_filename:
         :param model:
         :return:
         """
@@ -129,10 +137,12 @@ class FixPropRepair:
         search_stack: list[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
+        self._reward = 1 / self._discount_factor
 
         while len(search_stack) > 0 and continue_dive:
             node: FprNode = search_stack[-1]
             if not node.visited:
+                self._reward *= self._discount_factor
                 success: bool = self._find_solution_helper_node_loop(model, node)
                 if success:
                     continue_dive = False
@@ -153,18 +163,20 @@ class FixPropRepair:
                         self._fixing_order_strategy.backtrack(model)
                     search_stack.pop()
         if success:
-            self._logger.info("feasible integer variable fixing found")
-            if model.num_continuous_variables > 0:
-                success = self.handle_continuous_variables(model)
-                if success:
-                    self._logger.info("Solution found")
-                else:
-                    self._logger.info("No solution found")
+            success = self.determine_feasibility(model)
+            if success:
+                self._logger.info("Solution found")
+                if solution_filename is not None:
+                    model.get_gurobi_model().write(solution_filename)
+            else:
+                self._logger.info("No solution found")
+                self._reward = 0
         else:
             self._logger.info('no feasible integer variable fixing found')
+            self._reward = 0
         return success
 
-    def handle_continuous_variables(self, model: Model) -> bool:
+    def determine_feasibility(self, model: Model) -> bool:
         # solve the resulting LP to find a solution
         gp_model: gurobipy.Model = model.get_gurobi_model()
         self._logger.info("Gurobi architecture found. Solving LP")
@@ -175,5 +187,9 @@ class FixPropRepair:
             gp_var.ub = var.ub
         gp_model.optimize()
         status: int = gp_model.status
-        success = (status == GRB.OPTIMAL)
+        success = (status == GRB.OPTIMAL or status == GRB.SUBOPTIMAL)
         return success
+
+    @property
+    def reward(self):
+        return self._reward
