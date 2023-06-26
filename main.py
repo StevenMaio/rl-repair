@@ -126,6 +126,43 @@ def main3():
     torch.save(policy_architecture.state_dict(), policy_output)
     print(fprl.action_history.moves)
 
+def main4():
+    # get training instances
+    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:1]
+    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-policy-gradient.pt'
+    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-policy-gradient.pt'
+    initialize_logger(level=logging.INFO)
+
+    # create and load policy architecture
+    sample_indices: bool = True
+    policy_architecture = PolicyArchitecture(GnnParams)
+    policy_architecture.load_state_dict(torch.load(input_policy))
+    repair_strat = LearnableRepairWalk(RepairWalkParams(),
+                                       policy_architecture.cons_scoring_function,
+                                       policy_architecture.var_scoring_function,
+                                       sample_indices=sample_indices)
+    fprl = FixPropRepairLearn(policy_architecture.fixing_order_architecture,
+                              policy_architecture.value_fixing_architecture,
+                              repair_strat,
+                              LinearConstraintPropagator(),
+                              policy_architecture,
+                              sample_indices=sample_indices,
+                              in_training=True)
+
+    # configure training algorithm
+    num_epochs = 1
+    num_trajectories = 1
+    learning_parameter = 5
+    learning_algorithm = EvolutionaryStrategies(num_epochs,
+                                                num_trajectories,
+                                                learning_parameter)
+    with torch.no_grad():
+        learning_algorithm.train(fprl, instances)
+        print(learning_algorithm._num_successes)
+    torch.save(policy_architecture.state_dict(), policy_output)
+    print(fprl.action_history.moves)
+
 
 if __name__ == '__main__':
     #main()

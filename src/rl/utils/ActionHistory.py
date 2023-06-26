@@ -35,3 +35,6 @@ class ActionHistory:
     @property
     def moves(self):
         return self._moves
+
+    def __iter__(self):
+        return iter(self._moves)

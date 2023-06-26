@@ -191,5 +191,9 @@ class FixPropRepair:
         return success
 
     @property
-    def reward(self):
+    def reward(self) -> float:
         return self._reward
+
+    @property
+    def discount_factor(self) -> float:
+        return self._discount_factor

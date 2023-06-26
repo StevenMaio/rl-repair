@@ -10,11 +10,17 @@ class TensorList:
 
     def add_to_self(self, other: "TensorList"):
         for u, v in zip(self._tensors, other._tensors):
-            u.add_(v)
+            if u is not None and v is not None:
+                u.add_(v)
 
     def add_to_iterator(self, other: Iterator[torch.Tensor]):
         for u, v in zip(self._tensors, other):
             v.add_(u)
+
+    def add_from_iterator(self, other: Iterator[torch.Tensor]):
+        for u, v in zip(self._tensors, other):
+            if u is not None and v is not None:
+                u.add_(v)
 
     def scale(self, scale_factor: float):
         for t in self._tensors:
