@@ -59,6 +59,7 @@ class GraphNeuralNetwork(nn.Module):
         var_messenger_functions = []
         cons_update_functions = []
         cons_messenger_functions = []
+        batch_normalizations = []
 
         for input_size, output_size, hidden_layer in zip(chain((num_node_features,), intermediate_layers[:-1]),
                                                          intermediate_layers,
@@ -75,11 +76,14 @@ class GraphNeuralNetwork(nn.Module):
             cons_messenger_functions.append(MultilayerPerceptron([2 * input_size + num_edge_features,
                                                                   hidden_layer,
                                                                   input_size]))
+            # TODO: create batch normalization at this layer
+            batch_normalizations.append(nn.BatchNorm1d(output_size))
 
         self._var_update_functions = nn.ModuleList(var_update_functions)
         self._var_messenger_functions = nn.ModuleList(var_messenger_functions)
         self._cons_update_functions = nn.ModuleList(cons_update_functions)
         self._cons_messenger_functions = nn.ModuleList(cons_messenger_functions)
+        self._batch_normalizations = nn.ModuleList(batch_normalizations)
 
     def forward(self, graph: Graph):
         var_features = list(map(lambda u: u.features, graph.var_nodes))
@@ -136,4 +140,10 @@ class GraphNeuralNetwork(nn.Module):
             else:
                 update_input = torch.cat((feat, torch.zeros_like(feat)))
             updated_cons.append(self._cons_update_functions[iter_no](update_input))
+        num_vars = len(updated_vars)
+        # TODO: perform batch normalization
+        features = torch.stack([*updated_vars, *updated_cons])
+        features = self._batch_normalizations[iter_no](features)
+        updated_vars = features[:num_vars]
+        updated_cons = features[num_vars:]
         return updated_vars, updated_cons

@@ -10,16 +10,19 @@ class EvolutionaryStrategies(LearningAlgorithm):
     _num_epochs: int
     _num_trajectories: int
     _learning_parameter: float
+    _learning_rate: float
 
     _num_successes: int
 
     def __init__(self,
                  num_epochs: int,
                  num_trajectories: int,
-                 learning_parameter: float):
+                 learning_parameter: float,
+                 learning_rate: float):
         self._num_epochs = num_epochs
         self._num_trajectories = num_trajectories
         self._learning_parameter = learning_parameter
+        self._learning_rate = learning_rate
         self._num_successes = 0
 
     def train(self, fprl, instances):
@@ -32,7 +35,7 @@ class EvolutionaryStrategies(LearningAlgorithm):
                 gradient_estimate.add_to_self(self._train_instance_loop(fprl,
                                                                         problem_instance,
                                                                         noise_generator))
-            gradient_estimate.scale(1 / len(instances))
+            gradient_estimate.scale(1 / len(instances) / self._learning_parameter)
             gradient_estimate.add_to_iterator(policy_architecture.parameters())
 
     def _train_instance_loop(self, fprl, instance, noise_generator):
@@ -43,6 +46,8 @@ class EvolutionaryStrategies(LearningAlgorithm):
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
                                                 gnn=policy_architecture.gnn)
+        # model.convert_ge_constraints()
+        # model.init()
         for trajectory_num in range(self._num_trajectories):
             noise = noise_generator.sample()
             noise.scale(self._learning_parameter)

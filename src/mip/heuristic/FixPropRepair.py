@@ -10,11 +10,6 @@ from src.mip.model import DomainChange, Model, Variable, Column, Constraint
 from src.mip.propagation import Propagator
 from .FprNode import FprNode
 
-from src.utils import initialize_logger
-
-initialize_logger()
-
-
 class FixPropRepair:
     _discount_factor: float
     _reward: float
