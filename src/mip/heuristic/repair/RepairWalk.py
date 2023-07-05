@@ -8,7 +8,7 @@ import math
 
 from ...model import Sense, VarType, Domain, DomainChange
 
-from src.utils import compute_interval_distance, REPAIR_LEVEL
+from src.utils import compute_interval_distance
 from src.utils.data_struct.CircularList import CircularList
 
 
@@ -44,13 +44,11 @@ class RepairWalk(RepairStrategy):
         self._violation_scorer = num_violated_constraints
         self._num_moves = 0
         self._logger = logging.getLogger(__package__)
-        self._logger.setLevel(REPAIR_LEVEL)
-        self._logger.log(REPAIR_LEVEL,
-                         'initialized max_iterations=%d soft_reset_limit=%d noise_parameter=%.2f max_history=%d',
-                         params.max_iterations,
-                         params.soft_reset_limit,
-                         params.noise_parameter,
-                         params.history_size)
+        self._logger.debug('initialized max_iterations=%d soft_reset_limit=%d noise_parameter=%.2f max_history=%d',
+                           params.max_iterations,
+                           params.soft_reset_limit,
+                           params.noise_parameter,
+                           params.history_size)
 
     def repair_domain(self,
                       model: "Model",
@@ -68,11 +66,10 @@ class RepairWalk(RepairStrategy):
             var, domain_change = self._select_shift_candidate(model, cons)
             if var is None or domain_change in shift_history:
                 continue
-            self._logger.log(REPAIR_LEVEL,
-                             'iter_num=%d cons=%s shift=%s',
-                             iter_num,
-                             cons,
-                             domain_change)
+            self._logger.debug('iter_num=%d cons=%s shift=%s',
+                               iter_num,
+                               cons,
+                               domain_change)
             self._num_moves += 1
             shift_history.add(domain_change)
             model.apply_domain_changes(domain_change)
@@ -90,9 +87,8 @@ class RepairWalk(RepairStrategy):
             else:
                 soft_reset_counter += 1
                 if soft_reset_counter == self._soft_reset_limit:
-                    self._logger.log(REPAIR_LEVEL,
-                                     'soft reset limit hit best_score=%.2f',
-                                     best_violation_score)
+                    self._logger.debug('soft reset limit hit best_score=%.2f',
+                                       best_violation_score)
                     soft_reset_counter = 0
                     model.apply_domain_changes(*reset_changes, undo=True)
                     reset_changes.clear()
@@ -120,12 +116,12 @@ class RepairWalk(RepairStrategy):
             shift_amount: float
             if var.type == VarType.BINARY:
                 should_shift, shift_amount = self._determine_binary_var_shift_amount(constraint,
-                                                                                           var,
-                                                                                           coefficient)
+                                                                                     var,
+                                                                                     coefficient)
             elif var.type == VarType.INTEGER:
                 should_shift, shift_amount = self._determine_integer_var_shift_amount(constraint,
-                                                                                            var,
-                                                                                            coefficient)
+                                                                                      var,
+                                                                                      coefficient)
             else:
                 continue
             if should_shift:

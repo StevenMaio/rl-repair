@@ -90,12 +90,13 @@ def main2():
         print(f'reward={fprl.reward}')
 
 def main3():
+    initialize_logger(level=logging.INFO)
     # get training instances
     instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:1]
-    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique.pt'
-    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique.pt'
-    initialize_logger(level=logging.INFO)
+    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:4]
+    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-new3.pt'
+    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-new2.pt'
 
     # create and load policy architecture
     sample_indices: bool = True
@@ -111,24 +112,37 @@ def main3():
                               LinearConstraintPropagator(),
                               policy_architecture,
                               sample_indices=sample_indices,
-                              in_training=True)
+                              in_training=True,
+                              discount_factor=0.25)
 
     # configure training algorithm
-    num_epochs = 1
+    num_epochs = 50
     num_trajectories = 1
-    learning_parameter = 5
-    learning_algorithm = EvolutionaryStrategies(num_epochs,
+    learning_parameter = 0.2
+    learning_rate = 0.1
+    total_successes = 0
+    save_rate = 2
+    learning_algorithm = EvolutionaryStrategies(1,
                                                 num_trajectories,
-                                                learning_parameter)
+                                                learning_parameter,
+                                                learning_rate)
+    success_rates = []
     with torch.no_grad():
-        learning_algorithm.train(fprl, instances)
-        print(learning_algorithm._num_successes)
-    torch.save(policy_architecture.state_dict(), policy_output)
-    print(fprl.action_history.moves)
+        for iter_no in range(num_epochs):
+            learning_algorithm.train(fprl, instances)
+            total_successes += learning_algorithm._num_successes
+            success_rate = learning_algorithm._num_successes / (num_trajectories * len(instances))
+            success_rates.append(success_rate)
+            logging.info('iter=%d success_rate=%.2f', iter_no, success_rate)
+            if (iter_no + 1) % save_rate == 0:
+                torch.save(policy_architecture.state_dict(), policy_output)
+    # print(fprl.action_history.moves)
+    print(success_rates)
+    print(total_successes / len(instances) / num_trajectories / num_epochs)
 
 def main4():
     # get training instances
-    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
+    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/medium'
     instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:1]
     input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-policy-gradient.pt'
     policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-policy-gradient.pt'
