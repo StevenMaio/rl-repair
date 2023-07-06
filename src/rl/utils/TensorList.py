@@ -15,7 +15,8 @@ class TensorList:
 
     def add_to_iterator(self, other: Iterator[torch.Tensor]):
         for u, v in zip(self._tensors, other):
-            v.add_(u)
+            if u is not None and v is not None:
+                v.add_(u)
 
     def add_from_iterator(self, other: Iterator[torch.Tensor]):
         for u, v in zip(self._tensors, other):
@@ -28,5 +29,5 @@ class TensorList:
 
     @staticmethod
     def zeros_like(tensor_sequence: Iterator[torch.Tensor]):
-        zeros: List[torch.Tensor] = [torch.zeros_like(t) for t in tensor_sequence]
+        zeros: List[torch.Tensor] = [torch.zeros_like(t, requires_grad=False) for t in tensor_sequence]
         return TensorList(zeros)
