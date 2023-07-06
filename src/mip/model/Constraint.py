@@ -105,9 +105,15 @@ class Constraint:
         self._propagated = new_value
 
     @staticmethod
-    def from_gurobi_constr(constraint_id: int, gp_constr: gurobipy.Constr) -> "Constraint":
-        rhs: float = gp_constr.rhs
+    def from_gurobi_constr(constraint_id: int,
+                           gp_constr: gurobipy.Constr,
+                           convert_ge_cons: bool = False) -> "Constraint":
         sense = Sense.from_str(gp_constr.sense)
+        if sense == Sense.GE and convert_ge_cons:
+            rhs: float = -gp_constr.rhs
+            sense = Sense.LE
+        else:
+            rhs: float = gp_constr.rhs
         constraint = Constraint(constraint_id, sense, rhs)
         constraint._gp_constraint = gp_constr
         return constraint

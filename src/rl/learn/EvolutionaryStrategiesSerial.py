@@ -79,9 +79,8 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
         env.setParam(GRB.Param.OutputFlag, 0)
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
-                                                gnn=policy_architecture.gnn)
-        # model.convert_ge_constraints()
-        # model.init()
+                                                gnn=policy_architecture.gnn,
+                                                convert_ge_cons=True)
         for trajectory_num in range(self._num_trajectories):
             noise = noise_generator.sample()
             noise.scale(self._learning_parameter)

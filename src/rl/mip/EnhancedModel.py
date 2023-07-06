@@ -4,8 +4,7 @@ import torch
 
 from typing import List
 
-from src.mip.model import Variable, VarType, Constraint, Column, Row
-from src.mip.model import Model
+from src.mip.model import Variable, VarType, Constraint, Column, Row, Model, Sense
 
 from src.rl.architecture import GraphNeuralNetwork
 from src.rl.graph import Graph
@@ -66,12 +65,14 @@ class EnhancedModel(Model):
     @staticmethod
     def from_gurobi_model(gp_model: gurobipy.Model,
                           solve_lp: bool = False,
-                          gnn: GraphNeuralNetwork = None):
+                          gnn: GraphNeuralNetwork = None,
+                          convert_ge_cons: bool = False):
         """
         Creates a Model instance from a gurobipy.Model instance. The variables
         are sorted based on their variable type. Binary variables come first,
         then general integer variables and finally continuous variables.
 
+        :param convert_ge_cons:
         :param gnn:
         :param gp_model:
         :param solve_lp:
@@ -102,7 +103,10 @@ class EnhancedModel(Model):
         gp_constr: gurobipy.Constr
         for gp_constr in gp_model.getConstrs():
             # initialize row and columns and compute activities
-            constraint = Constraint.from_gurobi_constr(constraint_index, gp_constr)
+            constraint = Constraint.from_gurobi_constr(constraint_index,
+                                                       gp_constr,
+                                                       convert_ge_cons)
+            convert_cons = gp_constr.sense == '>' and convert_ge_cons
             min_activity: float = 0
             max_activity: float = 0
             model._constraints.append(constraint)
@@ -112,6 +116,8 @@ class EnhancedModel(Model):
                 gp_var: gurobipy.Var = gurobi_row.getVar(i)
                 index: int = gp_var.index
                 coefficient: float = gurobi_row.getCoeff(i)
+                if convert_cons:
+                    coefficient = -coefficient
                 row.add_term(index, coefficient)
                 var: Variable = model._variables[index]
                 column: Column = var.column
