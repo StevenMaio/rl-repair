@@ -23,11 +23,6 @@ def run_trajectory(data):
     """
     with torch.no_grad():
         instance, fprl, noise, learning_param, state_dict = data
-        # TODO: copy the FPRL architecture
-        # TODO: add perturbation to copied architecture
-        # TODO: load the given instance
-        # TODO: run FPRL on the instance
-        # TODO: return the reward from running FPRL
         policy_architecture = fprl.policy_architecture
         noise.scale(learning_param)
         noise.add_to_iterator(policy_architecture.parameters())
@@ -41,7 +36,7 @@ def run_trajectory(data):
         return fprl.reward
 
 
-class EvolutionaryStrategiesParallel(GradientEstimator):
+class EsParallelTrajectories(GradientEstimator):
     _num_successes: int
     _logger: logging.Logger
 
