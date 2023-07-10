@@ -5,3 +5,4 @@ from .FirstOrderTrainer import FirstOrderTrainer
 from .GradientAscent import GradientAscent
 
 from .EvolutionaryStrategiesSerial import EvolutionaryStrategiesSerial
+from .EvolutionaryStrategiesParallel import EvolutionaryStrategiesParallel

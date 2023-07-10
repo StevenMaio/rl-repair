@@ -8,7 +8,7 @@ from src.mip.propagation import LinearConstraintPropagator
 
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
-from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer
+from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer, EvolutionaryStrategiesParallel
 
 from src.utils import initialize_logger
 
@@ -46,7 +46,7 @@ def main():
 
     for v in m.getVars():
         print(v)
-        
+
 
 def main2():
     random.seed(0)
@@ -88,17 +88,18 @@ def main2():
         torch.save(policy_architecture.state_dict(), output_policy)
         print(f'reward={fprl.reward}')
 
-def main4():
+
+def serial_es_main():
     initialize_logger(level=logging.INFO)
     # get training instances
-    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
-    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir)][:2]
-    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-new3.pt'
-    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-new2.pt'
+    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/medium'
+    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f][2:3]
+    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-serial.pt'
+    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-serial.pt'
 
     # create and load policy architecture
-    sample_indices: bool = True
+    sample_indices: bool = False
     policy_architecture = PolicyArchitecture(GnnParams)
     policy_architecture.load_state_dict(torch.load(input_policy))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
@@ -112,14 +113,14 @@ def main4():
                               policy_architecture,
                               sample_indices=sample_indices,
                               in_training=True,
-                              discount_factor=0.25)
+                              discount_factor=0.90)
 
     # configure training algorithm
-    num_epochs = 10
-    num_trajectories = 10
-    learning_parameter = 0.2
+    num_epochs = 1
+    num_trajectories = 5
+    learning_parameter = 1
     learning_rate = 0.1
-    save_rate = 5
+    save_rate = 1
 
     gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=num_trajectories,
                                                       learning_parameter=learning_parameter)
@@ -133,5 +134,62 @@ def main4():
                   model_output=policy_output)
 
 
+def parallel_es_main():
+    initialize_logger(level=logging.INFO)
+    # get training instances
+    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/medium'
+    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f][2:3]
+    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
+    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
+
+    # create and load policy architecture
+    sample_indices: bool = False
+    policy_architecture = PolicyArchitecture(GnnParams)
+    policy_architecture.load_state_dict(torch.load(input_policy))
+    repair_strat = LearnableRepairWalk(RepairWalkParams(),
+                                       policy_architecture.cons_scoring_function,
+                                       policy_architecture.var_scoring_function,
+                                       sample_indices=sample_indices)
+    fprl = FixPropRepairLearn(policy_architecture.fixing_order_architecture,
+                              policy_architecture.value_fixing_architecture,
+                              repair_strat,
+                              LinearConstraintPropagator(),
+                              policy_architecture,
+                              sample_indices=sample_indices,
+                              in_training=True,
+                              discount_factor=0.90)
+
+    # configure training algorithm
+    num_epochs = 1
+    num_trajectories = 5
+    learning_parameter = 1
+    learning_rate = 0.1
+    save_rate = 1
+
+    gradient_estimator = EvolutionaryStrategiesParallel(num_trajectories=num_trajectories,
+                                                        learning_parameter=learning_parameter,
+                                                        num_workers=5)
+    optimization_method = GradientAscent(learning_rate=learning_rate)
+    trainer = FirstOrderTrainer(optimization_method=optimization_method,
+                                num_epochs=num_epochs,
+                                gradient_estimator=gradient_estimator)
+    trainer.train(fprl=fprl,
+                  training_instances=instances,
+                  save_rate=save_rate,
+                  model_output=policy_output)
+
+
 if __name__ == '__main__':
-    main4()
+    import time
+    # random.seed(0)
+    start = time.time()
+    serial_es_main()
+    serial_time = time.time() - start
+
+    # random.seed(0)
+    start = time.time()
+    parallel_es_main()
+    parallel_time = time.time() - start
+    print(f'serial {serial_time}')
+    print(f'parallel {parallel_time}')
