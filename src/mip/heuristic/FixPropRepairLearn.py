@@ -96,6 +96,8 @@ class FixPropRepairLearn(FixPropRepair):
     _action_history: ActionHistory
     _in_training: bool
 
+    _sample_indices: bool
+
     def __init__(self,
                  fixing_order_architecture,
                  value_fixing_architecture,
@@ -125,6 +127,7 @@ class FixPropRepairLearn(FixPropRepair):
         self._policy_architecture = policy_architecture
         self._action_history = ActionHistory(in_training)
         self._in_training = in_training
+        self._sample_indices = sample_indices
         if in_training:
             repair_strategy._action_history = self._action_history
 
@@ -194,6 +197,15 @@ class FixPropRepairLearn(FixPropRepair):
     @property
     def policy_architecture(self) -> PolicyArchitecture:
         return self._policy_architecture
+
+    @policy_architecture.setter
+    def policy_architecture(self, new_value):
+        self._policy_architecture = new_value
+        # change the architecture of the components as well
+        self._repair_strategy._var_scoring_function = self._policy_architecture.var_scoring_function
+        self._repair_strategy._cons_scoring_function = self._policy_architecture.cons_scoring_function
+        self._fixing_order_strategy._scoring_function = self._policy_architecture.fixing_order_architecture
+        self._value_fixing_strategy._scoring_function = self._policy_architecture.value_fixing_architecture
 
     def _find_solution_helper_node_loop(self,
                                         model: EnhancedModel,
@@ -265,3 +277,14 @@ class FixPropRepairLearn(FixPropRepair):
     def in_training(self, other):
         self._in_training = other
         self._action_history._in_training = other
+
+    @property
+    def sample_indices(self):
+        return self._sample_indices
+
+    @sample_indices.setter
+    def sample_indices(self, new_value):
+        self._sample_indices = new_value
+        self._repair_strategy._sample_indices = new_value
+        self._fixing_order_strategy._sample_indices = new_value
+        self._value_fixing_strategy._sample_indices = new_value

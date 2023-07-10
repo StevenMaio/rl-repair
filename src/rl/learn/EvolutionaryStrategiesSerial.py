@@ -11,9 +11,6 @@ from src.rl.mip import EnhancedModel
 
 
 class EvolutionaryStrategiesSerial(GradientEstimator):
-    _num_epochs: int
-    _learning_rate: float
-
     _num_successes: int
 
     # gradient estimator parameters

@@ -79,7 +79,7 @@ class EnhancedModel(Model):
         :return: a Model instance wrapping gurobi_model
         """
         logger: logging.Logger = logging.getLogger(__package__)
-        logger.info('creating architecture from gurobipy.Model')
+        logger.debug('creating architecture from gurobipy.Model')
         model = EnhancedModel(gnn)
         model._gp_model = gp_model
 

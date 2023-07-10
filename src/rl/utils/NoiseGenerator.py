@@ -12,8 +12,11 @@ class NoiseGenerator:
     def __init__(self, tensors: Iterator[torch.Tensor]):
         self._distributions = [Normal(torch.zeros_like(t), torch.ones_like(t)) for t in tensors]
 
-    def sample(self):
+    def sample(self, in_shared_mem=False):
         noises = []
         for distribution in self._distributions:
-            noises.append(distribution.sample())
+            epsilon = distribution.sample()
+            if in_shared_mem:
+                epsilon.share_memory_()
+            noises.append(epsilon)
         return TensorList(noises)
