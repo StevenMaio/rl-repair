@@ -8,7 +8,8 @@ from src.mip.propagation import LinearConstraintPropagator
 
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
-from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer, EsParallelTrajectories, EsParallelInstances
+from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer, EsParallelTrajectories, \
+    EsParallelInstances
 
 from src.utils import initialize_logger
 
@@ -19,6 +20,8 @@ import random
 
 import gurobipy as gp
 from gurobipy import GRB
+
+from src.utils.config import *
 
 
 def main():
@@ -91,57 +94,45 @@ def main2():
 
 def serial_es_main():
     initialize_logger(level=logging.INFO)
-    # get training instances
-    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
-    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
+
+    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
     instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
-    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-serial.pt'
-    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-serial.pt'
+    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
-    sample_indices: bool = False
     policy_architecture = PolicyArchitecture(GnnParams)
     policy_architecture.load_state_dict(torch.load(input_policy))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
-                                       sample_indices=sample_indices)
+                                       sample_indices=SAMPLE_INDICES)
     fprl = FixPropRepairLearn(policy_architecture.fixing_order_architecture,
                               policy_architecture.value_fixing_architecture,
                               repair_strat,
                               LinearConstraintPropagator(),
                               policy_architecture,
-                              sample_indices=sample_indices,
+                              sample_indices=SAMPLE_INDICES,
                               in_training=True,
-                              discount_factor=0.90)
+                              discount_factor=DISCOUNT_FACTOR)
 
-    # configure training algorithm
-    num_epochs = 1
-    num_trajectories = 5
-    learning_parameter = 1
-    learning_rate = 0.1
-    save_rate = 1
-
-    gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=num_trajectories,
-                                                      learning_parameter=learning_parameter)
-    optimization_method = GradientAscent(learning_rate=learning_rate)
+    gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=NUM_TRAJECTORIES,
+                                                      learning_parameter=LEARNING_PARAMETER)
+    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
-                                num_epochs=num_epochs,
+                                num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
     trainer.train(fprl=fprl,
                   training_instances=instances,
-                  save_rate=save_rate,
-                  model_output=policy_output)
+                  save_rate=SAVE_RATE,
+                  model_output=OUTPUT_MODEL)
 
 
 def parallel_trajectories_es_main():
     initialize_logger(level=logging.INFO)
-    # get training instances
-    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/medium'
-    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f][2:3]
-    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
-    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
+
+    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
     sample_indices: bool = False
@@ -150,44 +141,35 @@ def parallel_trajectories_es_main():
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
-                                       sample_indices=sample_indices)
+                                       sample_indices=SAMPLE_INDICES)
     fprl = FixPropRepairLearn(policy_architecture.fixing_order_architecture,
                               policy_architecture.value_fixing_architecture,
                               repair_strat,
                               LinearConstraintPropagator(),
                               policy_architecture,
-                              sample_indices=sample_indices,
+                              sample_indices=SAMPLE_INDICES,
                               in_training=True,
-                              discount_factor=0.90)
+                              discount_factor=DISCOUNT_FACTOR)
 
-    # configure training algorithm
-    num_epochs = 1
-    num_trajectories = 5
-    learning_parameter = 1
-    learning_rate = 0.1
-    save_rate = 1
-
-    gradient_estimator = EsParallelTrajectories(num_trajectories=num_trajectories,
-                                                learning_parameter=learning_parameter,
-                                                num_workers=5)
-    optimization_method = GradientAscent(learning_rate=learning_rate)
+    gradient_estimator = EsParallelTrajectories(num_trajectories=NUM_TRAJECTORIES,
+                                                learning_parameter=LEARNING_PARAMETER,
+                                                num_workers=NUM_WORKERS)
+    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
-                                num_epochs=num_epochs,
+                                num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
     trainer.train(fprl=fprl,
                   training_instances=instances,
-                  save_rate=save_rate,
-                  model_output=policy_output)
+                  save_rate=SAVE_RATE,
+                  model_output=OUTPUT_MODEL)
 
 
 def parallel_instances_es_main():
     initialize_logger(level=logging.INFO)
-    # get training instances
-    instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/random3sat/small'
-    # instance_dir = '/home/stevenmaio/PycharmProjects/rl-repair/data/instances/k-clique/small'
+
+    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
     instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
-    input_policy = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
-    policy_output = '/home/stevenmaio/PycharmProjects/rl-repair/data/torch_models/k-clique-es-parallel.pt'
+    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
     sample_indices: bool = False
@@ -196,44 +178,39 @@ def parallel_instances_es_main():
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
-                                       sample_indices=sample_indices)
+                                       sample_indices=SAMPLE_INDICES)
     fprl = FixPropRepairLearn(policy_architecture.fixing_order_architecture,
                               policy_architecture.value_fixing_architecture,
                               repair_strat,
                               LinearConstraintPropagator(),
                               policy_architecture,
-                              sample_indices=sample_indices,
+                              sample_indices=SAMPLE_INDICES,
                               in_training=True,
-                              discount_factor=0.90)
+                              discount_factor=DISCOUNT_FACTOR)
 
-    # configure training algorithm
-    num_epochs = 1
-    num_trajectories = 5
-    learning_parameter = 1
-    learning_rate = 0.1
-    save_rate = 1
-
-    gradient_estimator = EsParallelInstances(num_trajectories=num_trajectories,
-                                             learning_parameter=learning_parameter,
-                                             num_workers=5)
-    optimization_method = GradientAscent(learning_rate=learning_rate)
+    gradient_estimator = EsParallelInstances(num_trajectories=NUM_TRAJECTORIES,
+                                             learning_parameter=LEARNING_PARAMETER,
+                                             num_workers=NUM_WORKERS)
+    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
-                                num_epochs=num_epochs,
+                                num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
     trainer.train(fprl=fprl,
                   training_instances=instances,
-                  save_rate=save_rate,
-                  model_output=policy_output)
+                  save_rate=SAVE_RATE,
+                  model_output=OUTPUT_MODEL)
 
 
 if __name__ == '__main__':
     import time
+
+    # start = time.time()
+    # parallel_instances_es_main()
+    # parallel_time = time.time() - start
+
     start = time.time()
     serial_es_main()
     serial_time = time.time() - start
 
-    start = time.time()
-    parallel_instances_es_main()
-    parallel_time = time.time() - start
     print(f'serial {serial_time}')
-    print(f'parallel {parallel_time}')
+    # print(f'parallel {parallel_time}')
