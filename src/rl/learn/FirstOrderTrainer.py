@@ -38,6 +38,7 @@ class FirstOrderTrainer:
             # save model at epoch intervals
             if model_output is not None and (epoch + 1) % save_rate == 0:
                 torch.save(policy_architecture.state_dict(), model_output)
+            self._logger.info('end of epoch %d', epoch)
         # save model at end
         if model_output is not None:
             torch.save(policy_architecture.state_dict(), model_output)

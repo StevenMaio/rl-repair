@@ -31,3 +31,10 @@ class TensorList:
     def zeros_like(tensor_sequence: Iterator[torch.Tensor]):
         zeros: List[torch.Tensor] = [torch.zeros_like(t, requires_grad=False) for t in tensor_sequence]
         return TensorList(zeros)
+
+    def zero_out(self):
+        for t in self._tensors:
+            t.zero_()
+
+    def __iter__(self):
+        return iter(self._tensors)

@@ -9,7 +9,7 @@ from src.mip.propagation import LinearConstraintPropagator
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
 from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer, EsParallelTrajectories, \
-    EsParallelInstances
+    EsParallelInstances, Adam
 
 from src.utils import initialize_logger
 
@@ -96,7 +96,7 @@ def serial_es_main():
     initialize_logger(level=logging.INFO)
 
     instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f][5:6]
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
@@ -116,8 +116,14 @@ def serial_es_main():
                               discount_factor=DISCOUNT_FACTOR)
 
     gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=NUM_TRAJECTORIES,
-                                                      learning_parameter=LEARNING_PARAMETER)
-    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
+                                                      learning_parameter=LEARNING_PARAMETER,
+                                                      batch_size=BATCH_SIZE)
+    # optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
+    optimization_method = Adam(fprl=fprl,
+                               step_size=LEARNING_RATE,
+                               first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,
+                               second_moment_decay_rate=SECOND_MOMENT_DECAY_RATE,
+                               epsilon=EPSILON)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
                                 num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
@@ -135,7 +141,6 @@ def parallel_trajectories_es_main():
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
-    sample_indices: bool = False
     policy_architecture = PolicyArchitecture(GnnParams)
     policy_architecture.load_state_dict(torch.load(input_policy))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
@@ -172,7 +177,6 @@ def parallel_instances_es_main():
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
-    sample_indices: bool = False
     policy_architecture = PolicyArchitecture(GnnParams)
     policy_architecture.load_state_dict(torch.load(input_policy))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
