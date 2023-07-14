@@ -117,7 +117,8 @@ def serial_es_main():
 
     gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=NUM_TRAJECTORIES,
                                                       learning_parameter=LEARNING_PARAMETER,
-                                                      batch_size=BATCH_SIZE)
+                                                      batch_size=BATCH_SIZE,
+                                                      log_file=TRAINING_LOG)
     # optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
     optimization_method = Adam(fprl=fprl,
                                step_size=LEARNING_RATE,

@@ -9,6 +9,8 @@ from src.rl.utils import TensorList, NoiseGenerator
 from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
+from src.utils import FORMAT_STR
+
 
 class EvolutionaryStrategiesSerial(GradientEstimator):
     _num_successes: int
@@ -23,7 +25,8 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
     def __init__(self,
                  num_trajectories: int,
                  learning_parameter: float,
-                 batch_size: int = float('inf')):
+                 batch_size: int = float('inf'),
+                 log_file: str = None):
         self._num_trajectories = num_trajectories
         self._learning_parameter = learning_parameter
         self._num_successes = 0
@@ -33,6 +36,10 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
             self._use_all_samples = False
         self._batch_size = batch_size
         self._logger = logging.getLogger(__package__)
+        if log_file is not None:
+            file_handler = logging.FileHandler(log_file, mode='w')
+            file_handler.setFormatter(logging.Formatter(FORMAT_STR))
+            self._logger.addHandler(file_handler)
 
     def estimate_gradient(self, instances, fprl):
         with torch.no_grad():

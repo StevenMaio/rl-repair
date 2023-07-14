@@ -13,16 +13,16 @@ LOGGER_INITIALIZED: bool = False
 REPAIR_LEVEL: int = 5
 REPAIR_NAME: str = 'REPAIR'
 
+FORMAT_STR = "%(asctime)s %(levelname)s %(name)s.%(filename)s::%(funcName)s %(message)s"
 
 def initialize_logger(filename: str = '',
                       level: int = logging.DEBUG):
     global LOGGER_INITIALIZED
     if not LOGGER_INITIALIZED:
-        format_str = "%(levelname)s %(name)s.%(filename)s::%(funcName)s %(message)s"
         if str != '':
-            logging.basicConfig(filename=filename, format=format_str, level=level)
+            logging.basicConfig(filename=filename, format=FORMAT_STR, level=level)
         else:
-            logging.basicConfig(stream=sys.stdout, format=format_str, level=level)
+            logging.basicConfig(stream=sys.stdout, format=FORMAT_STR, level=level)
         LOGGER_INITIALIZED = True
         logging.addLevelName(REPAIR_LEVEL, REPAIR_NAME)
 
