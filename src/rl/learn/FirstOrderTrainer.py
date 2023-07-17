@@ -5,6 +5,8 @@ from .GradientEstimator import GradientEstimator
 
 from src.mip.heuristic import FixPropRepairLearn
 
+from src.rl.utils import DataSet
+
 import logging
 
 
@@ -25,13 +27,13 @@ class FirstOrderTrainer:
 
     def train(self,
               fprl: FixPropRepairLearn,
-              training_instances,
+              data_set: DataSet,
               save_rate: int = float('inf'),
               model_output: str = None):
         self._optimization_method.reset()
         policy_architecture = fprl.policy_architecture
         for epoch in range(self._num_epochs):
-            gradient_estimate = self._gradient_estimator.estimate_gradient(training_instances,
+            gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                            fprl)
             self._optimization_method.step(fprl.policy_architecture,
                                            gradient_estimate)
