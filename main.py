@@ -1,6 +1,8 @@
 import torch
 import os
 
+from src.rl.utils.DataSet import DataSet
+
 from src.mip.heuristic import FixPropRepairLearn, FixPropRepair
 from src.mip.heuristic.repair import LearnableRepairWalk
 from src.mip.params import RepairWalkParams
@@ -9,7 +11,7 @@ from src.mip.propagation import LinearConstraintPropagator
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
 from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, FirstOrderTrainer, EsParallelTrajectories, \
-    EsParallelInstances, Adam
+    EsParallelInstances, Adam, FoValTrainer
 
 from src.utils import initialize_logger
 
@@ -96,7 +98,11 @@ def serial_es_main():
     initialize_logger(level=logging.INFO)
 
     instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f][5:6]
+    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    data_set = DataSet(instances,
+                       validation_portion=VAL_PORTION,
+                       testing_portion=TEST_PORTION,
+                       rng_seed=DATA_SPLIT_SEED)
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
@@ -125,11 +131,14 @@ def serial_es_main():
                                first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,
                                second_moment_decay_rate=SECOND_MOMENT_DECAY_RATE,
                                epsilon=EPSILON)
-    trainer = FirstOrderTrainer(optimization_method=optimization_method,
-                                num_epochs=NUM_EPOCHS,
-                                gradient_estimator=gradient_estimator)
+    trainer = FoValTrainer(optimization_method=optimization_method,
+                           num_epochs=NUM_EPOCHS,
+                           gradient_estimator=gradient_estimator,
+                           iters_to_val=ITERS_TO_VAL,
+                           num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
+                           num_trajectories=NUM_VAL_TRAJECTORIES)
     trainer.train(fprl=fprl,
-                  training_instances=instances,
+                  data_set=data_set,
                   save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
@@ -139,6 +148,10 @@ def parallel_trajectories_es_main():
 
     instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
     instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    data_set = DataSet(instances,
+                       validation_portion=VAL_PORTION,
+                       testing_portion=TEST_PORTION,
+                       rng_seed=DATA_SPLIT_SEED)
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
@@ -165,7 +178,7 @@ def parallel_trajectories_es_main():
                                 num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
     trainer.train(fprl=fprl,
-                  training_instances=instances,
+                  data_set=data_set,
                   save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
@@ -175,6 +188,10 @@ def parallel_instances_es_main():
 
     instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
     instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    data_set = DataSet(instances,
+                       validation_portion=VAL_PORTION,
+                       testing_portion=TEST_PORTION,
+                       rng_seed=DATA_SPLIT_SEED)
     input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
@@ -201,7 +218,7 @@ def parallel_instances_es_main():
                                 num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator)
     trainer.train(fprl=fprl,
-                  training_instances=instances,
+                  data_set=data_set,
                   save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
