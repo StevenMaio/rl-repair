@@ -109,6 +109,7 @@ class FixPropRepairLearn(FixPropRepair):
                  propagate_fixings: bool = True,
                  repair: bool = True,
                  backtrack_on_infeasibility: bool = True,
+                 max_backtracks: int = 2,
                  sample_indices: bool = True,
                  in_training: bool = False):
         fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_architecture,
@@ -123,7 +124,8 @@ class FixPropRepairLearn(FixPropRepair):
                          max_absolute_value,
                          propagate_fixings,
                          repair,
-                         backtrack_on_infeasibility)
+                         backtrack_on_infeasibility,
+                         max_backtracks)
         self._policy_architecture = policy_architecture
         self._action_history = ActionHistory(in_training)
         self._in_training = in_training
@@ -154,6 +156,7 @@ class FixPropRepairLearn(FixPropRepair):
         search_stack: List[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
+        num_backtracks: int = 0
         self._reward = 1 / self._discount_factor
 
         while len(search_stack) > 0 and continue_dive:
@@ -177,7 +180,12 @@ class FixPropRepairLearn(FixPropRepair):
                         self._logger.debug("backtracking node=%d depth=%d",
                                            node.id,
                                            node.depth)
-                        model.apply_domain_changes(*node.domain_changes, undo=True)
+                        if num_backtracks < self._max_backtracks:
+                            model.apply_domain_changes(*node.domain_changes, undo=True)
+                            num_backtracks += 1
+                        else:
+                            success = False
+                            break
                         self._fixing_order_strategy.backtrack(model)
                     search_stack.pop()
         if success:

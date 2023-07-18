@@ -25,6 +25,7 @@ class FixPropRepair:
     _propagate_fixings: bool
     _repair: bool
     _backtrack_on_infeasibility: bool
+    _max_backtracks: int
 
     _logger: logging.Logger
 
@@ -37,7 +38,8 @@ class FixPropRepair:
                  max_absolute_value: float = float('inf'),
                  propagate_fixings: bool = True,
                  repair: bool = True,
-                 backtrack_on_infeasibility: bool = True):
+                 backtrack_on_infeasibility: bool = True,
+                 max_backtracks: int = 2):
         self._logger = logging.getLogger(__package__)
         self._logger.info('initializing FPR -- max_abs_val=%.2f fixing_order_strategy=%s '
                           'value_fixing_strategy=%s repair_strategy=%s',
@@ -55,6 +57,7 @@ class FixPropRepair:
         self._backtrack_on_infeasibility = backtrack_on_infeasibility
         self._reward = 0
         self._discount_factor = discount_factor
+        self._max_backtracks = max_backtracks
 
     def _find_solution_helper_node_loop(self,
                                         model: Model,
@@ -132,6 +135,7 @@ class FixPropRepair:
         search_stack: list[FprNode] = [root]
         success: bool = False
         continue_dive: bool = True
+        num_backtracks: int = 0
         self._reward = 1 / self._discount_factor
 
         while len(search_stack) > 0 and continue_dive:
@@ -154,8 +158,13 @@ class FixPropRepair:
                         self._logger.debug("backtracking node=%d depth=%d",
                                            node.id,
                                            node.depth)
-                        model.apply_domain_changes(*node.domain_changes, undo=True)
-                        self._fixing_order_strategy.backtrack(model)
+                        if num_backtracks < self._max_backtracks:
+                            model.apply_domain_changes(*node.domain_changes, undo=True)
+                            self._fixing_order_strategy.backtrack(model)
+                            num_backtracks += 1
+                        else:
+                            success = False
+                            break
                     search_stack.pop()
         if success:
             success = self.determine_feasibility(model)

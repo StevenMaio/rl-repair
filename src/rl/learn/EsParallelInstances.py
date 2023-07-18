@@ -29,11 +29,10 @@ def create_rng_seeds(num_trajectories):
     return rng_seeds
 
 
-def run_instance(data):
+def run_instance(fprl, instance, rng_seeds, learning_param):
     """Runtime procedure for inner loop
     """
     with torch.no_grad():
-        fprl, instance, rng_seeds, learning_param = data
         policy_architecture = fprl.policy_architecture
         env = gp.Env()
         env.setParam(GRB.Param.OutputFlag, 0)
@@ -105,13 +104,13 @@ class EsParallelInstances(GradientEstimator):
         policy_architecture = fprl.policy_architecture
         gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
         noise_generator = NoiseGenerator(policy_architecture.parameters())
-        results = self._worker_pool.map(run_instance,
-                                        map(lambda p: (fprl,
-                                                       p,
-                                                       create_rng_seeds(self._num_trajectories),
-                                                       self._learning_parameter,
-                                                       ),
-                                            instances))
+        results = self._worker_pool.starmap(run_instance,
+                                            map(lambda p: (fprl,
+                                                           p,
+                                                           create_rng_seeds(self._num_trajectories),
+                                                           self._learning_parameter,
+                                                           ),
+                                                instances))
         self._process_trajectory_results(results, gradient_estimate, noise_generator)
         gradient_estimate.scale(1 / len(instances) / self._num_trajectories / self._learning_parameter)
         return gradient_estimate

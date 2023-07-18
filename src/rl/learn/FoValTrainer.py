@@ -55,10 +55,12 @@ class FoValTrainer:
               model_output: str = None):
         self._optimization_method.reset()
         policy_architecture = fprl.policy_architecture
-        # TODO: init training -- save current model, and av
+
         best_architecture = PolicyArchitecture(GnnParams)
         best_architecture.load_state_dict(policy_architecture.state_dict())
-        best_val_score = self._compute_val_score(fprl, data_set.validation_instances)
+        # best_val_score = self._compute_val_score(fprl, data_set.validation_instances)
+
+        best_val_score = 0
         num_worse_val = 0
         self._logger.info('begin training -- val_score=%.2f', best_val_score)
         for epoch in range(self._num_epochs):
@@ -89,9 +91,7 @@ class FoValTrainer:
             torch.save(policy_architecture.state_dict(), model_output)
 
     def _compute_val_score(self, fprl, val_data):
-        prev_sample_indices = fprl.sample_indices
         policy_architecture = fprl.policy_architecture
-        fprl.sample_indices = False
         num_successes = 0
         batch_size = len(val_data) * self._num_trajectories
         for instance in val_data:
@@ -108,5 +108,4 @@ class FoValTrainer:
                     num_successes += 1
                 if trajectory_num < self._num_trajectories - 1:
                     model.reset()
-        fprl.sample_indices = prev_sample_indices
         return num_successes / batch_size

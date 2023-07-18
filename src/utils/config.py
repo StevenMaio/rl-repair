@@ -4,19 +4,20 @@ INSTANCES = 'data/instances/random3sat/small'
 
 # MDP configuration
 DISCOUNT_FACTOR = 0.8
+MAX_BACKTRACKS = 1
 
 # Training configuration
 INPUT_MODEL = 'data/torch_models/random3sat-med-es-serial.pt'
 OUTPUT_MODEL = 'data/torch_models/random3sat-med-es-serial-one-instance.pt'
 # OUTPUT_MODEL = None
-NUM_EPOCHS = 100
+NUM_EPOCHS = 1000
 NUM_TRAJECTORIES = 5
-NUM_WORKERS = 5
+NUM_WORKERS = 2
 SAMPLE_INDICES = True
 LEARNING_PARAMETER = 0.2
 LEARNING_RATE = 0.1
 SAVE_RATE = 2
-BATCH_SIZE = 12
+BATCH_SIZE = 1
 
 # Adam configuration
 FIRST_MOMENT_DECAY_RATE = 0.9
