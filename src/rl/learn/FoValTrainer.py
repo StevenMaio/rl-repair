@@ -16,6 +16,8 @@ from ..params import GnnParams
 import gurobipy as gp
 from gurobipy import GRB
 
+from src.utils import FORMAT_STR
+
 
 class FoValTrainer:
     _optimization_method: FirstOrderMethod
@@ -32,14 +34,19 @@ class FoValTrainer:
                  num_epochs: int,
                  iters_to_val: int,
                  num_allowable_worse_vals: int = 5,
-                 num_trajectories: int = 5):
+                 num_trajectories: int = 5,
+                 log_file: str = None):
         self._optimization_method = optimization_method
         self._gradient_estimator = gradient_estimator
         self._num_epochs = num_epochs
-        self._logger = logging.getLogger(__name__)
         self._iters_to_val = iters_to_val
         self._num_allowable_worse_vals = num_allowable_worse_vals
         self._num_trajectories = num_trajectories
+        self._logger = logging.getLogger(__package__)
+        if log_file is not None:
+            file_handler = logging.FileHandler(log_file, mode='w')
+            file_handler.setFormatter(logging.Formatter(FORMAT_STR))
+            self._logger.addHandler(file_handler)
 
     def train(self,
               fprl: FixPropRepairLearn,
