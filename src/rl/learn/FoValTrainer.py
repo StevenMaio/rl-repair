@@ -58,11 +58,11 @@ class FoValTrainer:
 
         best_architecture = PolicyArchitecture(GnnParams)
         best_architecture.load_state_dict(policy_architecture.state_dict())
-        # best_val_score = self._compute_val_score(fprl, data_set.validation_instances)
-
+        test_score = self._evaluate_instances(fprl, data_set.test_instances)
         best_val_score = 0
+        val_score = 0
         num_worse_val = 0
-        self._logger.info('begin training -- val_score=%.2f', best_val_score)
+        self._logger.info('BEGIN_TRAINING test_score=%.2f', test_score)
         for epoch in range(self._num_epochs):
             gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                            fprl)
@@ -71,26 +71,29 @@ class FoValTrainer:
             # save model at epoch intervals
             if model_output is not None and (epoch + 1) % save_rate == 0:
                 torch.save(policy_architecture.state_dict(), model_output)
+            self._logger.info('END_OF_EPOCH epoch=%d best_val=%.2f', epoch, best_val_score)
             if (epoch + 1) % self._iters_to_val == 0:
-                val_score = self._compute_val_score(fprl, data_set.validation_data)
+                val_score = self._evaluate_instances(fprl, data_set.validation_instances)
                 if val_score > best_val_score:
                     best_val_score = val_score
                     best_architecture.load_state_dict(policy_architecture.state_dict())
                     num_worse_val = 0
-                    self._logger.info('validation_score improvement -- val_score=%.2f', best_val_score)
+                    self._logger.info('VAL_SCORE_IMPROVEMENT val_score=%.2f', best_val_score)
                 else:
+                    self._logger.info('VAL_COMPUTATION val_score=%.2f', val_score)
                     num_worse_val += 1
                     if num_worse_val == self._num_allowable_worse_vals:
                         policy_architecture.load_state_dict(best_architecture.state_dict())
                         num_worse_val = 0
                         self._optimization_method.reset()
-                        self._logger.info('resetting architecture')
-            self._logger.info('end of epoch %d. best_val=%.2f', epoch, best_val_score)
+                        self._logger.info('PARAMETER_RESET')
         # save model at end
         if model_output is not None:
-            torch.save(policy_architecture.state_dict(), model_output)
+            torch.save(best_architecture.state_dict(), model_output)
+        test_score = self._evaluate_instances(fprl, data_set.test_instances)
+        self._logger.info('END_TRAINING test_score=%.2f', test_score)
 
-    def _compute_val_score(self, fprl, val_data):
+    def _evaluate_instances(self, fprl, val_data):
         policy_architecture = fprl.policy_architecture
         num_successes = 0
         batch_size = len(val_data) * self._num_trajectories

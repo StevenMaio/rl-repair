@@ -45,7 +45,7 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
             else:
                 gradient_estimate = self._estimate_gradient_batched_iteration(instances, fprl)
                 batch_size = self._batch_size * self._num_trajectories
-            self._logger.info('success_rate=%.2f', self._num_successes / batch_size)
+            self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)
             return gradient_estimate
 
     def _estimate_gradient_use_all_samples(self, instances, fprl):
