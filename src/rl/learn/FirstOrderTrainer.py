@@ -9,6 +9,7 @@ from src.rl.utils import DataSet
 
 import logging
 
+from .val import ValidationProgressChecker
 from ..architecture import PolicyArchitecture
 from ..mip import EnhancedModel
 from ..params import GnnParams
@@ -27,14 +28,13 @@ class FoValTrainer:
     _iters_to_progress_check: int
     _num_allowable_worse_vals: int
     _num_trajectories: int
+    _val_progress_checker: ValidationProgressChecker
 
     #
     _best_val_score: float
-    _val_score: float
     _init_test_score: float
     _final_test_score: float
     _current_epoch: int
-    _num_worse_vals: int
     _best_policy: PolicyArchitecture
 
     def __init__(self,
@@ -42,6 +42,7 @@ class FoValTrainer:
                  gradient_estimator: GradientEstimator,
                  num_epochs: int,
                  iters_to_progress_check: int,
+                 val_progress_checker: ValidationProgressChecker,
                  num_allowable_worse_vals: int = 5,
                  num_trajectories: int = 5,
                  log_file: str = None):
@@ -53,6 +54,7 @@ class FoValTrainer:
         self._num_trajectories = num_trajectories
         self._logger = logging.getLogger(__package__)
         self._best_policy = PolicyArchitecture(GnnParams)
+        self._val_progress_checker = val_progress_checker
         if log_file is not None:
             file_handler = logging.FileHandler(log_file, mode='w')
             file_handler.setFormatter(logging.Formatter(FORMAT_STR))
@@ -70,8 +72,6 @@ class FoValTrainer:
             self._best_policy.load_state_dict(policy_architecture.state_dict())
             self._current_epoch = 0
             self._best_val_score = 0
-            self._val_score = 0
-            self._num_worse_vals = 0
             if len(data_set.testing_instances) > 0:
                 self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
             else:
@@ -97,20 +97,17 @@ class FoValTrainer:
     def _check_progress(self, fprl, data_set, model_output, trainer_data):
         policy_architecture = fprl.policy_architecture
         if len(data_set.validation_instances) > 0:
-            self._val_score = self._evaluate_instances(fprl, data_set.validation_instances)
-            if self._val_score > self._best_val_score:
-                self._best_val_score = self._val_score
+            val_score = self._evaluate_instances(fprl, data_set.validation_instances)
+            self._val_progress_checker.update_progress(val_score)
+            val_score = self._val_progress_checker.corrected_score()
+            self._logger.info('VAL_COMPUTATION val_score=%.2f', val_score)
+            if val_score > self._best_val_score:
+                self._best_val_score = val_score
                 self._best_policy.load_state_dict(policy_architecture.state_dict())
-                self._num_worse_vals = 0
-                self._logger.info('VAL_SCORE_IMPROVEMENT val_score=%.2f', self._best_val_score)
-            else:
-                self._logger.info('VAL_COMPUTATION val_score=%.2f', self._val_score)
-                self._num_worse_vals += 1
-                if self._num_worse_vals == self._num_allowable_worse_vals:
-                    policy_architecture.load_state_dict(self._best_policy.state_dict())
-                    self._num_worse_vals = 0
-                    self._optimization_method.reset()
-                    self._logger.info('PARAMETER_RESET')
+            if not self._val_progress_checker.continue_training():
+                policy_architecture.load_state_dict(self._best_policy.state_dict())
+                self._optimization_method.reset()
+                self._logger.info('PARAMETER_RESET')
         if model_output is not None:
             torch.save(self._best_policy.state_dict(), model_output)
         # TODO: save trainer data

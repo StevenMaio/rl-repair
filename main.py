@@ -1,6 +1,7 @@
 import torch
 import os
 
+from src.rl.learn.val import TrendChecker
 from src.rl.utils.DataSet import DataSet
 
 from src.mip.heuristic import FixPropRepairLearn
@@ -46,9 +47,14 @@ def serial_es_main():
                               discount_factor=DISCOUNT_FACTOR,
                               max_backtracks=MAX_BACKTRACKS)
 
+    # training settings
     gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=NUM_TRAJECTORIES,
                                                       learning_parameter=LEARNING_PARAMETER,
                                                       batch_size=BATCH_SIZE)
+    val_progress_checker = TrendChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
+                                        init_trend=0,
+                                        trend_weight=0.2,
+                                        level_weight=0.2)
     optimization_method = Adam(fprl=fprl,
                                step_size=LEARNING_RATE,
                                first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,
@@ -60,7 +66,8 @@ def serial_es_main():
                            iters_to_progress_check=ITERS_TO_PROGRESS_CHECK,
                            num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
                            num_trajectories=NUM_EVAL_TRAJECTORIES,
-                           log_file=TRAINING_LOG)
+                           log_file=TRAINING_LOG,
+                           val_progress_checker=val_progress_checker)
     trainer.train(fprl=fprl,
                   data_set=data_set,
                   model_output=OUTPUT_MODEL)
