@@ -23,17 +23,15 @@ import torch.multiprocessing as mp
 
 
 def serial_es_main():
-    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    instances = [os.sep.join([INSTANCES, f]) for f in os.listdir(INSTANCES) if '.opb' in f or '.mps' in f]
     data_set = DataSet(instances,
                        validation_portion=VAL_PORTION,
                        testing_portion=TEST_PORTION,
                        rng_seed=DATA_SPLIT_SEED)
-    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
     policy_architecture = PolicyArchitecture(GnnParams)
-    policy_architecture.load_state_dict(torch.load(input_policy))
+    policy_architecture.load_state_dict(torch.load(INPUT_MODEL))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
@@ -59,28 +57,25 @@ def serial_es_main():
     trainer = FoValTrainer(optimization_method=optimization_method,
                            num_epochs=NUM_EPOCHS,
                            gradient_estimator=gradient_estimator,
-                           iters_to_val=ITERS_TO_VAL,
+                           iters_to_progress_check=ITERS_TO_PROGRESS_CHECK,
                            num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
-                           num_trajectories=NUM_VAL_TRAJECTORIES,
+                           num_trajectories=NUM_EVAL_TRAJECTORIES,
                            log_file=TRAINING_LOG)
     trainer.train(fprl=fprl,
                   data_set=data_set,
-                  save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
 
 def parallel_instances_es_main():
-    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    instances = [os.sep.join([INSTANCES, f]) for f in os.listdir(INSTANCES) if '.opb' in f or '.mps' in f]
     data_set = DataSet(instances,
                        validation_portion=VAL_PORTION,
                        testing_portion=TEST_PORTION,
                        rng_seed=DATA_SPLIT_SEED)
-    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
     policy_architecture = PolicyArchitecture(GnnParams)
-    policy_architecture.load_state_dict(torch.load(input_policy))
+    policy_architecture.load_state_dict(torch.load(INPUT_MODEL))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
@@ -107,28 +102,25 @@ def parallel_instances_es_main():
     trainer = FoValTrainer(optimization_method=optimization_method,
                            num_epochs=NUM_EPOCHS,
                            gradient_estimator=gradient_estimator,
-                           iters_to_val=ITERS_TO_VAL,
+                           iters_to_progress_check=ITERS_TO_PROGRESS_CHECK,
                            num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
-                           num_trajectories=NUM_VAL_TRAJECTORIES,
+                           num_trajectories=NUM_EVAL_TRAJECTORIES,
                            log_file=TRAINING_LOG)
     trainer.train(fprl=fprl,
                   data_set=data_set,
-                  save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
 
 def parallel_trajectories_es_main():
-    instance_dir = os.sep.join([PROJECT_ROOT, INSTANCES])
-    instances = [os.sep.join([instance_dir, f]) for f in os.listdir(instance_dir) if '.opb' in f or '.mps' in f]
+    instances = [os.sep.join([INSTANCES, f]) for f in os.listdir(INSTANCES) if '.opb' in f or '.mps' in f]
     data_set = DataSet(instances,
                        validation_portion=VAL_PORTION,
                        testing_portion=TEST_PORTION,
                        rng_seed=DATA_SPLIT_SEED)
-    input_policy = os.sep.join([PROJECT_ROOT, INPUT_MODEL])
 
     # create and load policy architecture
     policy_architecture = PolicyArchitecture(GnnParams)
-    policy_architecture.load_state_dict(torch.load(input_policy))
+    policy_architecture.load_state_dict(torch.load(INPUT_MODEL))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
@@ -151,13 +143,12 @@ def parallel_trajectories_es_main():
     trainer = FoValTrainer(optimization_method=optimization_method,
                            num_epochs=NUM_EPOCHS,
                            gradient_estimator=gradient_estimator,
-                           iters_to_val=ITERS_TO_VAL,
+                           iters_to_progress_check=ITERS_TO_PROGRESS_CHECK,
                            num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
-                           num_trajectories=NUM_VAL_TRAJECTORIES,
+                           num_trajectories=NUM_EVAL_TRAJECTORIES,
                            log_file=TRAINING_LOG)
     trainer.train(fprl=fprl,
                   data_set=data_set,
-                  save_rate=SAVE_RATE,
                   model_output=OUTPUT_MODEL)
 
 

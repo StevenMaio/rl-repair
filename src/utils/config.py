@@ -11,12 +11,11 @@ INPUT_MODEL = 'data/torch_models/random3sat-med-es-serial.pt'
 OUTPUT_MODEL = 'data/torch_models/random3sat-med-es-serial-one-instance.pt'
 # OUTPUT_MODEL = None
 NUM_EPOCHS = 1000
-NUM_TRAJECTORIES = 5
+NUM_TRAJECTORIES = 10
 NUM_WORKERS = 2
 SAMPLE_INDICES = True
 LEARNING_PARAMETER = 0.2
 LEARNING_RATE = 0.1
-SAVE_RATE = 2
 BATCH_SIZE = 1
 
 # Adam configuration
@@ -27,8 +26,8 @@ EPSILON = 1e-8
 TRAINING_LOG = "training_log.txt"
 
 # validation trainer configuration
-NUM_VAL_TRAJECTORIES = 5
-ITERS_TO_VAL = 5
+NUM_EVAL_TRAJECTORIES = 10
+ITERS_TO_PROGRESS_CHECK = 10
 NUM_ALLOWABLE_WORSE_VALS = 10
 
 # data configuration

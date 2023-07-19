@@ -40,5 +40,5 @@ class DataSet:
         return self._validation_instances
 
     @property
-    def testing_indices(self):
+    def testing_instances(self):
         return self._testing_instances
