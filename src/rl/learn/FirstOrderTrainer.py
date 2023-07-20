@@ -72,6 +72,7 @@ class FoValTrainer:
             self._best_policy.load_state_dict(policy_architecture.state_dict())
             self._current_epoch = 0
             self._best_val_score = 0
+            self._val_progress_checker.reset()
             if len(data_set.testing_instances) > 0:
                 self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
             else:
@@ -85,7 +86,8 @@ class FoValTrainer:
             self._logger.info('END_OF_EPOCH epoch=%d best_val=%.2f', epoch, self._best_val_score)
             if (epoch + 1) % self._iters_to_progress_check == 0:
                 self._check_progress(fprl, data_set, model_output, trainer_data)
-        # save model at end
+        # load best policy architecture
+        policy_architecture.load_state_dict(self._best_policy.state_dict())
         if model_output is not None:
             torch.save(self._best_policy.state_dict(), model_output)
         if len(data_set.testing_instances) > 0:
@@ -97,10 +99,12 @@ class FoValTrainer:
     def _check_progress(self, fprl, data_set, model_output, trainer_data):
         policy_architecture = fprl.policy_architecture
         if len(data_set.validation_instances) > 0:
-            val_score = self._evaluate_instances(fprl, data_set.validation_instances)
-            self._val_progress_checker.update_progress(val_score)
+            raw_val_score = self._evaluate_instances(fprl, data_set.validation_instances)
+            self._val_progress_checker.update_progress(raw_val_score)
             val_score = self._val_progress_checker.corrected_score()
-            self._logger.info('VAL_COMPUTATION val_score=%.2f', val_score)
+            self._logger.info('VAL_COMPUTATION raw_val_score=%.2f val_score=%.2f',
+                              raw_val_score,
+                              val_score)
             if val_score > self._best_val_score:
                 self._best_val_score = val_score
                 self._best_policy.load_state_dict(policy_architecture.state_dict())

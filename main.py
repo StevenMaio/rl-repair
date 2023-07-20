@@ -52,9 +52,9 @@ def serial_es_main():
                                                       learning_parameter=LEARNING_PARAMETER,
                                                       batch_size=BATCH_SIZE)
     val_progress_checker = TrendChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
-                                        init_trend=0,
-                                        trend_weight=0.2,
-                                        level_weight=0.2)
+                                        init_trend=INIT_TREND,
+                                        trend_weight=TREND_WEIGHT,
+                                        level_weight=LEVEL_WEIGHT)
     optimization_method = Adam(fprl=fprl,
                                step_size=LEARNING_RATE,
                                first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,

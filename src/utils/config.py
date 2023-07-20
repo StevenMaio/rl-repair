@@ -3,7 +3,7 @@ PROJECT_ROOT = '/home/stevenmaio/PycharmProjects/rl-repair'
 INSTANCES = 'data/instances/random3sat/small'
 
 # MDP configuration
-DISCOUNT_FACTOR = 0.8
+DISCOUNT_FACTOR = 0.4
 MAX_BACKTRACKS = 1
 
 # Training configuration
@@ -34,3 +34,8 @@ NUM_ALLOWABLE_WORSE_VALS = 10
 DATA_SPLIT_SEED = 1133291
 VAL_PORTION = 0.2
 TEST_PORTION = 0.2
+
+# DES config
+INIT_TREND = 0
+LEVEL_WEIGHT = 0.2
+TREND_WEIGHT = 0.2
