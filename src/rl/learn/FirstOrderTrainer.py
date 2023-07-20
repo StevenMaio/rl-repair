@@ -111,6 +111,7 @@ class FoValTrainer:
             if not self._val_progress_checker.continue_training():
                 policy_architecture.load_state_dict(self._best_policy.state_dict())
                 self._optimization_method.reset()
+                self._val_progress_checker.reset()
                 self._logger.info('PARAMETER_RESET')
         if model_output is not None:
             torch.save(self._best_policy.state_dict(), model_output)

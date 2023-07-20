@@ -28,7 +28,7 @@ TRAINING_LOG = "training_log.txt"
 # validation trainer configuration
 NUM_EVAL_TRAJECTORIES = 10
 ITERS_TO_PROGRESS_CHECK = 10
-NUM_ALLOWABLE_WORSE_VALS = 10
+NUM_ALLOWABLE_WORSE_VALS = 5
 
 # data configuration
 DATA_SPLIT_SEED = 1133291
