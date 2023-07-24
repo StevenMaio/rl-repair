@@ -1,7 +1,7 @@
 import torch
 import os
 
-from src.rl.learn.val import TrendChecker
+from src.rl.learn.val import LevelChecker
 from src.rl.utils.DataSet import DataSet
 
 from src.mip.heuristic import FixPropRepairLearn
@@ -32,7 +32,7 @@ def serial_es_main():
 
     # create and load policy architecture
     policy_architecture = PolicyArchitecture(GnnParams)
-    policy_architecture.load_state_dict(torch.load(INPUT_MODEL))
+    # policy_architecture.load_state_dict(torch.load(INPUT_MODEL))
     repair_strat = LearnableRepairWalk(RepairWalkParams(),
                                        policy_architecture.cons_scoring_function,
                                        policy_architecture.var_scoring_function,
@@ -51,7 +51,7 @@ def serial_es_main():
     gradient_estimator = EvolutionaryStrategiesSerial(num_trajectories=NUM_TRAJECTORIES,
                                                       learning_parameter=LEARNING_PARAMETER,
                                                       batch_size=BATCH_SIZE)
-    val_progress_checker = TrendChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
+    val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         init_trend=INIT_TREND,
                                         trend_weight=TREND_WEIGHT,
                                         level_weight=LEVEL_WEIGHT)

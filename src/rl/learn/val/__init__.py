@@ -1,4 +1,5 @@
 from .ValidationProgressChecker import ValidationProgressChecker
 
 from .TrendChecker import TrendChecker
+from .LevelChecker import LevelChecker
 from .ValidationProgressChecker import ValidationProgressChecker

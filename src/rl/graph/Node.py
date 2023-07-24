@@ -2,11 +2,11 @@
 Contains the Node class implementation for this project.
 """
 from enum import Enum, auto
-from typing import List
+from typing import List, Union
 
 import torch
 
-from src.mip.model import VarType, Sense
+from src.mip.model import VarType, Sense, Variable, Constraint, Model
 from src.rl.params import GnnParams
 from src.utils import IndexEnum
 
@@ -21,12 +21,17 @@ class FeatIdx(IndexEnum):
     IS_CONTINUOUS = auto()
     LOCAL_DOMAIN_SIZE = auto()
     IS_FIXED = auto()
+    APPEARANCE_SCORE = auto()
+    OBJECTIVE_COEF = auto()
 
     # constraint features
     IS_LE_CONSTRAINT = auto()
     IS_EQ_CONSTRAINT = auto()
     VIOLATION = auto()
     NUM_VARIABLES = auto()
+    IS_FEASIBLE = auto()
+    IS_VIOLATED = auto()
+    PORTION_FIXED_VARIABLES = auto()
 
 
 class NodeType(Enum):
@@ -36,16 +41,19 @@ class NodeType(Enum):
 
 class Node:
     _edges: List["Edge"]
-    _data: object
+    _data: Union[Variable, Constraint]
     _features: torch.Tensor
     _node_type: NodeType
 
-    def __init__(self, data: object, node_type: NodeType):
+    def __init__(self,
+                 model: Model,
+                 data: Union[Variable, Constraint],
+                 node_type: NodeType):
         self._edges = []
         self._data = data
         self._node_type = node_type
         if node_type == NodeType.VAR or node_type == NodeType.CONS:
-            self.update(None, True)
+            self.update(model, True)
         else:
             raise Exception("Unsupported NodeType value")
 
@@ -65,8 +73,8 @@ class Node:
                 self._features[FeatIdx.IS_INTEGER] = 1.0
             else:
                 self._features[FeatIdx.IS_CONTINUOUS] = 1.0
-        if model is None:
-            return
+            self._features[FeatIdx.OBJECTIVE_COEF] = var.objective_coefficient
+            self._features[FeatIdx.APPEARANCE_SCORE] = var.column.size / len(model.constraints)
         self._features[FeatIdx.LOCAL_DOMAIN_SIZE] = var.local_domain.size() / var.global_domain.size()
         self._features[FeatIdx.IS_FIXED] = 1 if var.lb == var.ub else 0
 
@@ -78,9 +86,10 @@ class Node:
                 self._features[FeatIdx.IS_LE_CONSTRAINT] = 1.0
             elif cons.sense == Sense.EQ:
                 self._features[FeatIdx.IS_EQ_CONSTRAINT] = 1.0
-        if model is None:
-            return
-        self._features[FeatIdx.NUM_VARIABLES] = cons.row.size / model.largest_cons_size
+            self._features[FeatIdx.NUM_VARIABLES] = cons.row.size / model.largest_cons_size
+        self._features[FeatIdx.IS_VIOLATED] = cons.is_violated()
+        self._features[FeatIdx.IS_FEASIBLE] = 1 - cons.is_violated()
+        self._features[FeatIdx.VIOLATION] = cons.compute_violation()
 
     @property
     def edges(self) -> List["Edge"]:

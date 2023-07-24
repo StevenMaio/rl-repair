@@ -33,10 +33,10 @@ class EnhancedModel(Model):
             return
         else:
             super().init()
-            self._instance_graph = Graph(self)
-            self._initialized = True
             largest_cons_size = max(map(lambda c: c.row.size, self.constraints))
             self._largest_cons_size = largest_cons_size
+            self._instance_graph = Graph(self)
+            self._initialized = True
 
     def update(self):
         """
@@ -133,11 +133,11 @@ class EnhancedModel(Model):
             violated |= constraint.is_violated()
             constraint_index += 1
         model._num_constraints = constraint_index
+        largest_cons_size = max(map(lambda c: c.row.size, model.constraints))
+        model._largest_cons_size = largest_cons_size
         model._instance_graph = Graph(model)
         model._initialized = True
         model._violated = violated
-        largest_cons_size = max(map(lambda c: c.row.size, model.constraints))
-        model._largest_cons_size = largest_cons_size
         logger.info('num_vars=%d num_bin=%d num_int=%d num_cont=%d num_constrs=%d',
                     model._num_variables,
                     model._num_binary_variables,

@@ -17,9 +17,9 @@ class Graph:
         self._cons_nodes = []
         self._edges = []
         for var in model.variables:
-            self._var_nodes.append(Node(var, NodeType.VAR))
+            self._var_nodes.append(Node(model, var, NodeType.VAR))
         for cons in model.constraints:
-            cons_node = Node(cons, NodeType.CONS)
+            cons_node = Node(model, cons, NodeType.CONS)
             self._cons_nodes.append(cons_node)
             row = cons.row
             for var_id, coef in row:

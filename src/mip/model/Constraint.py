@@ -76,6 +76,19 @@ class Constraint:
     def min_activity(self, new_value: float):
         self._min_activity = new_value
 
+    def compute_violation(self):
+        if self.is_violated():
+            if self.sense == Sense.LE:
+                return self.min_activity - self.rhs
+            elif self.sense == Sense.GE:
+                return self.rhs - self.max_activity
+            else:
+                return min(abs(self.rhs - self.min_activity),
+                           abs(self.rhs - self.max_activity))
+        else:
+            return 0
+
+
     @property
     def max_activity(self) -> float:
         return self._max_activity
