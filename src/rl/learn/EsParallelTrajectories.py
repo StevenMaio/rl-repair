@@ -16,6 +16,7 @@ from gurobipy import GRB
 
 from src.rl.utils import TensorList, NoiseGenerator
 from src.utils import create_rng_seeds
+from src.utils.config import NUM_THREADS
 
 from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
@@ -24,6 +25,7 @@ from src.rl.mip import EnhancedModel
 def _run_trajectory(fprl, instance, rng_seed, learning_param):
     """Runtime procedure for inner loop
     """
+    torch.set_num_threads(NUM_THREADS)
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
         env = gp.Env()

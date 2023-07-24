@@ -163,7 +163,9 @@ def parallel_trajectories_es_main():
                                 num_allowable_worse_vals=NUM_ALLOWABLE_WORSE_VALS,
                                 num_trajectories=NUM_EVAL_TRAJECTORIES,
                                 log_file=TRAINING_LOG,
-                                val_progress_checker=val_progress_checker)
+                                val_progress_checker=val_progress_checker,
+                                eval_in_parallel=True,
+                                num_workers=NUM_WORKERS)
     trainer.train(fprl=fprl,
                   data_set=data_set,
                   model_output=OUTPUT_MODEL)
@@ -171,6 +173,7 @@ def parallel_trajectories_es_main():
 
 if __name__ == '__main__':
     initialize_logger(level=logging.INFO)
+    torch.set_num_threads(NUM_THREADS)
     mp.set_start_method('forkserver')
     import time
 

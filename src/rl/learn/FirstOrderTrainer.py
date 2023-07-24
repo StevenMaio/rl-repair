@@ -1,5 +1,9 @@
-import torch
+import itertools
 
+import torch
+import torch.multiprocessing as mp
+
+from src.utils.config import NUM_WORKERS, NUM_THREADS
 from .FirstOrderMethod import FirstOrderMethod
 from .GradientEstimator import GradientEstimator
 
@@ -17,7 +21,21 @@ from ..params import GnnParams
 import gurobipy as gp
 from gurobipy import GRB
 
-from src.utils import FORMAT_STR
+from src.utils import FORMAT_STR, create_rng_seeds
+
+
+def _eval_trajectory(fprl, instance):
+    torch.set_num_threads(NUM_THREADS)
+    with torch.no_grad():
+        policy_architecture = fprl.policy_architecture
+        env = gp.Env()
+        env.setParam(GRB.Param.OutputFlag, 0)
+        gp_model = gp.read(instance, env)
+        model = EnhancedModel.from_gurobi_model(gp_model,
+                                                gnn=policy_architecture.gnn,
+                                                convert_ge_cons=True)
+        fprl.find_solution(model)
+        return fprl.reward
 
 
 class FirstOrderTrainer:
@@ -29,6 +47,11 @@ class FirstOrderTrainer:
     _num_allowable_worse_vals: int
     _num_trajectories: int
     _val_progress_checker: ValidationProgressChecker
+
+    # parallel stuff
+    _eval_in_parallel: bool
+    _num_workers: int
+    _worker_pool: mp.Pool
 
     #
     _best_val_score: float
@@ -45,7 +68,9 @@ class FirstOrderTrainer:
                  val_progress_checker: ValidationProgressChecker,
                  num_allowable_worse_vals: int = 5,
                  num_trajectories: int = 5,
-                 log_file: str = None):
+                 log_file: str = None,
+                 eval_in_parallel: bool = False,
+                 num_workers: int = NUM_WORKERS):
         self._optimization_method = optimization_method
         self._gradient_estimator = gradient_estimator
         self._num_epochs = num_epochs
@@ -55,6 +80,10 @@ class FirstOrderTrainer:
         self._logger = logging.getLogger(__package__)
         self._best_policy = PolicyArchitecture(GnnParams)
         self._val_progress_checker = val_progress_checker
+        self._eval_in_parallel = eval_in_parallel
+        self._num_workers = num_workers
+        if self._eval_in_parallel:
+            self._worker_pool = mp.Pool(NUM_WORKERS)
         if log_file is not None:
             file_handler = logging.FileHandler(log_file, mode='w')
             file_handler.setFormatter(logging.Formatter(FORMAT_STR))
@@ -117,11 +146,32 @@ class FirstOrderTrainer:
             torch.save(self._best_policy.state_dict(), model_output)
         # TODO: save trainer data
 
-    def _evaluate_instances(self, fprl, val_data):
+    def _evaluate_instances(self, fprl, instances):
+        if self._eval_in_parallel:
+            return self._evaluate_instances_parallel(fprl, instances)
+        else:
+            return self._evaluate_instances_serial(fprl, instances)
+
+    def _evaluate_instances_parallel(self, fprl, instances):
+        batch_size = len(instances) * self._num_trajectories
+        multi_instances = [itertools.repeat(i, self._num_trajectories) for i in instances]
+        multi_instances = itertools.chain(*multi_instances)
+        results = self._worker_pool.starmap(_eval_trajectory,
+                                            map(lambda i: (fprl,
+                                                           i),
+                                                multi_instances)
+                                            )
+        num_successes = 0
+        for r in results:
+            if r > 0:
+                num_successes += 1
+        return num_successes / batch_size
+
+    def _evaluate_instances_serial(self, fprl, instances):
         policy_architecture = fprl.policy_architecture
         num_successes = 0
-        batch_size = len(val_data) * self._num_trajectories
-        for instance in val_data:
+        batch_size = len(instances) * self._num_trajectories
+        for instance in instances:
             # TODO: allow for this to be done in parallel
             env = gp.Env()
             env.setParam(GRB.Param.OutputFlag, 0)
