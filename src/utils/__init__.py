@@ -62,3 +62,12 @@ class IndexEnum(IntEnum):
     def _generate_next_value_(name, start, count, last_values):
         start = 0
         return IntEnum._generate_next_value_(name, start, count, last_values)
+
+
+def create_rng_seeds(num_trajectories):
+    """Creates a list of rng_seeds
+    :param num_trajectories:
+    :return:
+    """
+    rng_seeds = [random.randint(0x8000_0000_0000_0000, 0xffff_ffff_ffff_ffff) for _ in range(num_trajectories)]
+    return rng_seeds

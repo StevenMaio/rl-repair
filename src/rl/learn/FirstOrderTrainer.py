@@ -20,7 +20,7 @@ from gurobipy import GRB
 from src.utils import FORMAT_STR
 
 
-class FoValTrainer:
+class FirstOrderTrainer:
     _optimization_method: FirstOrderMethod
     _gradient_estimator: GradientEstimator
     _num_epochs: int

@@ -7,6 +7,7 @@ single instance are run on the same process, but we spawn multiple processes.
 import random
 import logging
 import torch
+import itertools
 
 import torch.multiprocessing as mp
 
@@ -14,26 +15,30 @@ import gurobipy as gp
 from gurobipy import GRB
 
 from src.rl.utils import TensorList, NoiseGenerator
+from src.utils import create_rng_seeds
+
 from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 
-def run_trajectory(data):
+def _run_trajectory(fprl, instance, rng_seed, learning_param):
     """Runtime procedure for inner loop
     """
     with torch.no_grad():
-        instance, fprl, noise, learning_param, state_dict = data
         policy_architecture = fprl.policy_architecture
-        noise.scale(learning_param)
-        noise.add_to_iterator(policy_architecture.parameters())
         env = gp.Env()
         env.setParam(GRB.Param.OutputFlag, 0)
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
                                                 gnn=policy_architecture.gnn,
                                                 convert_ge_cons=True)
+        noise_generator = NoiseGenerator(policy_architecture.parameters())
+        torch.manual_seed(rng_seed)
+        noise = noise_generator.sample()
+        noise.scale(learning_param)
+        noise.add_to_iterator(policy_architecture.parameters())
         fprl.find_solution(model)
-        return fprl.reward
+        return fprl.reward, rng_seed
 
 
 class EsParallelTrajectories(GradientEstimator):
@@ -83,50 +88,26 @@ class EsParallelTrajectories(GradientEstimator):
         policy_architecture = fprl.policy_architecture
         noise_generator = NoiseGenerator(policy_architecture.parameters())
         gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
-        state_dict = policy_architecture.state_dict()
-        for problem_instance in instances:
-            perturbations = [noise_generator.sample(in_shared_mem=False) for _ in range(self._num_trajectories)]
-            results = self._worker_pool.map(run_trajectory,
-                                            map(lambda p: (problem_instance,
-                                                           fprl,
-                                                           p,
-                                                           self._learning_parameter,
-                                                           state_dict),
-                                                perturbations))
-            self._process_trajectory_results(results, perturbations, gradient_estimate)
+        input_pairs = [itertools.product([i], create_rng_seeds(self._num_trajectories)) for i in instances]
+        input_pairs = itertools.chain(*input_pairs)
+        results = self._worker_pool.starmap(_run_trajectory,
+                                            map(lambda t: (fprl,
+                                                           t[0],
+                                                           t[1],
+                                                           self._learning_parameter),
+                                                input_pairs)
+                                            )
+        self._process_trajectory_results(results, gradient_estimate, noise_generator)
         gradient_estimate.scale(1 / len(instances) / self._num_trajectories / self._learning_parameter)
         return gradient_estimate
 
     def _process_trajectory_results(self,
                                     results,
-                                    perturbations,
-                                    gradient_estimate):
-        for reward, noise in zip(results, perturbations):
+                                    gradient_estimate,
+                                    noise_generator):
+        for reward, rng_seed in results:
             if reward > 0:
-                noise.scale(reward)
+                torch.manual_seed(rng_seed)
+                noise = noise_generator.sample()
                 gradient_estimate.add_to_self(noise)
                 self._num_successes += 1
-
-    def _get_instance_gradient_estimate(self, fprl, instance, noise_generator):
-        policy_architecture = fprl.policy_architecture
-        gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
-        env = gp.Env()
-        env.setParam(GRB.Param.OutputFlag, 0)
-        gp_model = gp.read(instance, env)
-        model = EnhancedModel.from_gurobi_model(gp_model,
-                                                gnn=policy_architecture.gnn,
-                                                convert_ge_cons=True)
-        for trajectory_num in range(self._num_trajectories):
-            noise = noise_generator.sample()
-            noise.scale(self._learning_parameter)
-            noise.add_to_iterator(policy_architecture.parameters())
-            fprl.find_solution(model)
-            noise.scale(-1)
-            noise.add_to_iterator(policy_architecture.parameters())
-            if fprl.reward != 0:
-                noise.scale(fprl.reward)
-                gradient_estimate.add_to_self(noise)
-                self._num_successes += 1
-            model.reset()
-        gradient_estimate.scale(1 / self._num_trajectories)
-        return gradient_estimate

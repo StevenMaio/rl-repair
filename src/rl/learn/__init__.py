@@ -1,7 +1,7 @@
 from .GradientEstimator import GradientEstimator
 from .FirstOrderMethod import FirstOrderMethod
 
-from .FirstOrderTrainer import FoValTrainer
+from .FirstOrderTrainer import FirstOrderTrainer
 
 # First order optimization methods
 from .GradientAscent import GradientAscent
