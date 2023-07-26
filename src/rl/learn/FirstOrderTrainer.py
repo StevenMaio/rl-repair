@@ -19,14 +19,17 @@ from ..mip import EnhancedModel
 from ..params import GnnParams
 
 import gurobipy as gp
+from gurobipy import GRB
 
-from src.utils import FORMAT_STR, get_global_pool, get_global_env
+from src.utils import FORMAT_STR, get_global_pool
 
 
-def _eval_trajectory(fprl, env, instance):
+def _eval_trajectory(fprl, instance):
     torch.set_num_threads(NUM_THREADS)
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
+        env = gp.Env()
+        env.setParam(GRB.Param.OutputFlag, 0)
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
                                                 gnn=policy_architecture.gnn,
@@ -153,10 +156,8 @@ class FirstOrderTrainer:
         batch_size = len(instances) * self._num_trajectories
         multi_instances = [itertools.repeat(i, self._num_trajectories) for i in instances]
         multi_instances = itertools.chain(*multi_instances)
-        env = get_global_env()
         results = self._worker_pool.starmap(_eval_trajectory,
                                             map(lambda i: (fprl,
-                                                           env,
                                                            i),
                                                 multi_instances)
                                             )
@@ -170,8 +171,9 @@ class FirstOrderTrainer:
         policy_architecture = fprl.policy_architecture
         num_successes = 0
         batch_size = len(instances) * self._num_trajectories
-        env = get_global_env()
         for instance in instances:
+            env = gp.Env()
+            env.setParam(GRB.Param.OutputFlag, 0)
             gp_model = gp.read(instance, env)
             model = EnhancedModel.from_gurobi_model(gp_model,
                                                     gnn=policy_architecture.gnn,

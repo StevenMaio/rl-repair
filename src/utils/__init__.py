@@ -4,8 +4,6 @@ from enum import IntEnum
 from typing import List
 
 import random
-import gurobipy as gp
-from gurobipy import GRB
 
 import torch.multiprocessing as mp
 
@@ -21,11 +19,7 @@ WORKER_POOL = None
 REPAIR_LEVEL: int = 5
 REPAIR_NAME: str = 'REPAIR'
 
-GP_ENV_INITIALIZED = False
-GP_ENV = None
-
 FORMAT_STR = "%(asctime)s %(levelname)s %(name)s.%(filename)s::%(funcName)s %(message)s"
-
 
 def initialize_logger(filename: str = '',
                       level: int = logging.DEBUG):
@@ -44,20 +38,8 @@ def get_global_pool():
     if WORKER_POOL_INITIALIZED:
         return WORKER_POOL
     else:
-        WORKER_POOL_INITIALIZED = True
         WORKER_POOL = mp.Pool(NUM_WORKERS)
         return WORKER_POOL
-
-
-def get_global_env():
-    global GP_ENV_INITIALIZED, GP_ENV
-    if GP_ENV_INITIALIZED:
-        return GP_ENV
-    else:
-        GP_ENV_INITIALIZED = True
-        GP_ENV = gp.Env()
-        GP_ENV.setParam(GRB.Param.OutputFlag, 0)
-        return GP_ENV
 
 
 def range_permutation(n: int) -> List[int]:

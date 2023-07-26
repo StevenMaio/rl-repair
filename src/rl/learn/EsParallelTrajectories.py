@@ -15,19 +15,21 @@ import gurobipy as gp
 from gurobipy import GRB
 
 from src.rl.utils import TensorList, NoiseGenerator
-from src.utils import create_rng_seeds, get_global_pool, get_global_env
+from src.utils import create_rng_seeds, get_global_pool
 from src.utils.config import NUM_THREADS
 
 from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 
-def _run_trajectory(fprl, env, instance, rng_seed, learning_param):
+def _run_trajectory(fprl, instance, rng_seed, learning_param):
     """Runtime procedure for inner loop
     """
     torch.set_num_threads(NUM_THREADS)
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
+        env = gp.Env()
+        env.setParam(GRB.Param.OutputFlag, 0)
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
                                                 gnn=policy_architecture.gnn,
@@ -90,10 +92,8 @@ class EsParallelTrajectories(GradientEstimator):
         gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
         input_pairs = [itertools.product([i], create_rng_seeds(self._num_trajectories)) for i in instances]
         input_pairs = itertools.chain(*input_pairs)
-        env = get_global_pool()
         results = self._worker_pool.starmap(_run_trajectory,
                                             map(lambda t: (fprl,
-                                                           env,
                                                            t[0],
                                                            t[1],
                                                            self._learning_parameter),
