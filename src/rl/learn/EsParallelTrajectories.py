@@ -15,7 +15,7 @@ import gurobipy as gp
 from gurobipy import GRB
 
 from src.rl.utils import TensorList, NoiseGenerator
-from src.utils import create_rng_seeds
+from src.utils import create_rng_seeds, get_global_pool
 from src.utils.config import NUM_THREADS
 
 from .GradientEstimator import GradientEstimator
@@ -64,7 +64,7 @@ class EsParallelTrajectories(GradientEstimator):
         self._num_trajectories = num_trajectories
         self._learning_parameter = learning_parameter
         self._num_workers = num_workers
-        self._worker_pool = mp.Pool(num_workers)
+        self._worker_pool = get_global_pool()
         self._num_successes = 0
         if batch_size == float('inf'):
             self._use_all_samples = True

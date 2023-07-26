@@ -5,10 +5,16 @@ from typing import List
 
 import random
 
+import torch.multiprocessing as mp
+
 from .constants import VAR_NODE, CONS_NODE
+from .config import NUM_WORKERS
 
 # logging constants -- should we do more with the levels?
 LOGGER_INITIALIZED: bool = False
+
+WORKER_POOL_INITIALIZED: bool = False
+WORKER_POOL = None
 
 REPAIR_LEVEL: int = 5
 REPAIR_NAME: str = 'REPAIR'
@@ -25,6 +31,15 @@ def initialize_logger(filename: str = '',
             logging.basicConfig(stream=sys.stdout, format=FORMAT_STR, level=level)
         LOGGER_INITIALIZED = True
         logging.addLevelName(REPAIR_LEVEL, REPAIR_NAME)
+
+
+def get_global_pool():
+    global WORKER_POOL_INITIALIZED, WORKER_POOL
+    if WORKER_POOL_INITIALIZED:
+        return WORKER_POOL
+    else:
+        WORKER_POOL = mp.Pool(NUM_WORKERS)
+        return WORKER_POOL
 
 
 def range_permutation(n: int) -> List[int]:

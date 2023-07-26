@@ -21,7 +21,7 @@ from ..params import GnnParams
 import gurobipy as gp
 from gurobipy import GRB
 
-from src.utils import FORMAT_STR, create_rng_seeds
+from src.utils import FORMAT_STR, get_global_pool
 
 
 def _eval_trajectory(fprl, instance):
@@ -83,7 +83,7 @@ class FirstOrderTrainer:
         self._eval_in_parallel = eval_in_parallel
         self._num_workers = num_workers
         if self._eval_in_parallel:
-            self._worker_pool = mp.Pool(NUM_WORKERS)
+            self._worker_pool = get_global_pool()
         if log_file is not None:
             file_handler = logging.FileHandler(log_file, mode='w')
             file_handler.setFormatter(logging.Formatter(FORMAT_STR))
@@ -172,7 +172,6 @@ class FirstOrderTrainer:
         num_successes = 0
         batch_size = len(instances) * self._num_trajectories
         for instance in instances:
-            # TODO: allow for this to be done in parallel
             env = gp.Env()
             env.setParam(GRB.Param.OutputFlag, 0)
             gp_model = gp.read(instance, env)
