@@ -201,3 +201,11 @@ class FixPropRepair:
     @property
     def discount_factor(self) -> float:
         return self._discount_factor
+
+    @property
+    def propagator(self) -> Propagator:
+        return self._propagator
+
+    @property
+    def repair_strategy(self) -> RepairStrategy:
+        return self._repair_strategy

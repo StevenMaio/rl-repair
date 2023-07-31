@@ -5,7 +5,10 @@ from typing import List, Tuple
 
 class ActionType(Enum):
     FIXING = auto()
-    REPAIR = auto()
+    REPAIR_VAR_SELECT = auto()
+    REPAIR_GREEDY = auto()
+    REPAIR_FINISHED = auto()
+    BACKTRACK = auto()
 
 
 class ActionHistory:
@@ -38,3 +41,6 @@ class ActionHistory:
 
     def __iter__(self):
         return iter(self._moves)
+
+    def __len__(self):
+        return len(self._moves)

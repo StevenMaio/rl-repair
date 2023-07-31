@@ -132,7 +132,7 @@ class Model:
                 continue
             if undo:
                 var.local_domain = prev_domain
-                logger.debug("var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
+                logger.debug("UNDO_DOMAIN_CHANGE var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
                              var.id,
                              new_domain.lower_bound,
                              new_domain.upper_bound,
@@ -141,7 +141,7 @@ class Model:
                              undo)
             else:
                 var.local_domain = new_domain
-                logger.debug("var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
+                logger.debug("DO_DOMAIN_CHANGE var=%d prev_domain=[%.2f, %.2f] new_domain=[%.2f, %.2f] undo=%d",
                              var.id,
                              prev_domain.lower_bound,
                              prev_domain.upper_bound,
@@ -167,12 +167,13 @@ class Model:
                         constraint.min_activity += ub_shift * coefficient
                         constraint.max_activity += lb_shift * coefficient
                     violated |= constraint.is_violated()
-                    logger.debug("constraint-change id=%d min_activity=%.2f max_activity=%2.f rhs=%.2f violated=%d",
+                    logger.debug("CONSTRAINT_CHANGE id=%d min_activity=%.2f max_activity=%.2f rhs=%.2f violated=%d coef=%.2f",
                                  constraint.id,
                                  constraint.min_activity,
                                  constraint.max_activity,
                                  constraint.rhs,
-                                 constraint.is_violated())
+                                 constraint.is_violated(),
+                                 coefficient)
         if recompute_activities:
             if undo:
                 # in this case, I think we have to check all the constraints again
@@ -369,25 +370,12 @@ class Model:
         return model
 
     def reset(self):
-        violated = False
+        self._violated = False
         for var in self._variables:
             var.reset()
         for constraint in self._constraints:
-            row: Row = constraint.row
-            min_activity: float = 0
-            max_activity: float = 0
-            for index, coefficient in row:
-                var: Variable = self.get_var(index)
-                if coefficient > 0:
-                    min_activity += var.lb * coefficient
-                    max_activity += var.ub * coefficient
-                else:
-                    min_activity += var.ub * coefficient
-                    max_activity += var.lb * coefficient
-            constraint.min_activity = min_activity
-            constraint.max_activity = max_activity
-            violated |= constraint.is_violated()
-        self._violated = violated
+            constraint.reset(self)
+            self._violated |= constraint.is_violated()
 
     def update(self):
         # this does nothing in the base class

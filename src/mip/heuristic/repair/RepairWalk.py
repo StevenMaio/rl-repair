@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, List
+from typing import Callable, Tuple, List, Any
 
 from .RepairStrategy import RepairStrategy
 
@@ -104,9 +104,9 @@ class RepairWalk(RepairStrategy):
         violated_constraints = list(filter(lambda c: c.is_violated(), model.constraints))
         return random.choice(violated_constraints)
 
-    def _select_shift_candidate(self,
-                                model: "Model",
-                                constraint: "Constraint") -> Tuple["Variable", "DomainChange"]:
+    def find_shift_candidates(self,
+                              model: "Model",
+                              constraint: "Constraint") -> tuple[list[tuple[Any, Any, float]], bool]:
         shift_candidates = []
         has_plateau_move: bool = False
         row: "Row" = constraint.row
@@ -131,14 +131,24 @@ class RepairWalk(RepairStrategy):
                 shift_candidates.append((var, shifted_domain, shift_damage))
         if has_plateau_move:
             plateau_moves = list(filter(lambda t: t[2] == 0, shift_candidates))
-            var, new_domain = self._sample_var_candidate(model, constraint, plateau_moves)
+            return plateau_moves, True
+        else:
+            return shift_candidates, False
+
+    def _select_shift_candidate(self,
+                                model: "Model",
+                                constraint: "Constraint") -> Tuple["Variable", "DomainChange"]:
+        shift_candidates, has_plateau_move = self.find_shift_candidates(model, constraint)
+        if has_plateau_move:
+            var, new_domain = self._sample_var_candidate(model, constraint, shift_candidates)
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
             return var, domain_change
         elif len(shift_candidates) > 0:
             if random.random() <= self._noise_parameter:
                 var, new_domain = self._sample_var_candidate(model, constraint, shift_candidates)
             else:
-                var, new_domain, _ = min(shift_candidates, key=lambda t: t[2])
+                var, new_domain = self._pick_candidate_greedily(constraint,
+                                                                shift_candidates)
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
             return var, domain_change
         else:
@@ -274,6 +284,10 @@ class RepairWalk(RepairStrategy):
             return (new_distance < original_distance), shift
         else:
             raise Exception("Sense.GE not supported")
+
+    def _pick_candidate_greedily(self, cons, shift_candidates):
+        var, new_domain, _ = min(shift_candidates, key=lambda t: t[2])
+        return var, new_domain
 
     @property
     def num_moves(self) -> int:

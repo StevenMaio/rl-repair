@@ -1,11 +1,14 @@
+from typing import Union
+
+
 class Domain:
     EMPTY_DOMAIN: "Domain"
     _lower_bound: float
     _upper_bound: float
 
     def __init__(self, lower_bound: float, upper_bound: float):
-        self._lower_bound = lower_bound
-        self._upper_bound = upper_bound
+        self._lower_bound = float(lower_bound)
+        self._upper_bound = float(upper_bound)
 
     @property
     def lower_bound(self):
@@ -49,6 +52,12 @@ class Domain:
 
     def size(self) -> float:
         return self._upper_bound - self._lower_bound
+
+    def __contains__(self, item: Union["Domain", float]):
+        if isinstance(item, float):
+            return self._lower_bound <= item <= self._upper_bound
+        else:
+            return self._lower_bound <= item._lower_bound and item._upper_bound <= self._upper_bound
 
 
 Domain.EMPTY_DOMAIN = -1
