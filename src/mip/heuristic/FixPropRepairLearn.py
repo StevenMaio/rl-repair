@@ -177,10 +177,11 @@ class FixPropRepairLearn(FixPropRepair):
                     search_stack.append(node.right)
                 else:
                     if node.depth > 0:
-                        self._logger.debug("backtracking node=%d depth=%d",
-                                           node.id,
-                                           node.depth)
                         if num_backtracks < self._max_backtracks:
+                            self._logger.debug("BACKTRACKING node=%d depth=%d",
+                                               node.id,
+                                               node.depth)
+                            self._action_history.add(None, ActionType.BACKTRACK)
                             model.apply_domain_changes(*node.domain_changes, undo=True)
                             num_backtracks += 1
                         else:
@@ -231,20 +232,21 @@ class FixPropRepairLearn(FixPropRepair):
                 fixed_var: Variable = model.get_var(var_id)
                 column: Column = fixed_var.column
                 i: int
-                propagation_changes: list[DomainChange] = []
-                for i in range(column.size):
-                    constraint: Constraint = model.get_constraint(column.get_constraint_index(i))
-                    self._propagator.propagate(model, constraint, propagation_changes)
-
-                # apply the deduced domain changes from propagation
-                model.apply_domain_changes(*propagation_changes)
-                head.domain_changes.extend(propagation_changes)
-                propagation_changes.clear()
-                infeasible = model.violated
+                prop_changes: list[DomainChange] = []
+                for idx, _ in column:
+                    constraint: Constraint = model.get_constraint(idx)
+                    self._propagator.propagate(model, constraint, prop_changes)
+                    model.apply_domain_changes(*prop_changes)
+                    head.domain_changes.extend(prop_changes)
+                    prop_changes.clear()
+                    infeasible |= constraint.is_violated()
+                    if infeasible:
+                        break
         if infeasible and self._repair:
             self._logger.debug("starting repair")
             repair_changes: list[DomainChange] = []
             success: bool = self._repair_strategy.repair_domain(model, repair_changes)
+            self._action_history.add(success, ActionType.REPAIR_FINISHED)
             self._logger.debug("repair success=%d", success)
             self._reward *= pow(self._discount_factor, self._repair_strategy.num_moves)
             if success:

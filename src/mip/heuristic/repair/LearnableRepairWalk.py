@@ -52,11 +52,11 @@ class LearnableRepairWalk(RepairWalk):
     def _sample_var_candidate(self, model, cons, candidates):
         features = []
         cons_features = model.cons_features[cons.id]
-        for var, domain_change, shift_damage in candidates:
+        for var, new_domain, shift_damage in candidates:
             features.append(self._create_shift_candidate_feature(model,
                                                                  cons_features,
                                                                  var,
-                                                                 domain_change,
+                                                                 new_domain,
                                                                  shift_damage))
         features = torch.stack(features)
         scores = self._var_scoring_function(features)
@@ -65,12 +65,18 @@ class LearnableRepairWalk(RepairWalk):
             idx = torch.multinomial(probabilities.T, 1).item()
         else:
             idx = torch.argmax(scores)
-        var, domain_change, _ = candidates[idx]
+        var, new_domain, _ = candidates[idx]
         if self._action_history is not None:
-            self._action_history.add((cons.id, var.id), ActionType.REPAIR)
-        return var, domain_change
+            self._action_history.add((cons.id, var.id, new_domain), ActionType.REPAIR_VAR_SELECT)
+        return var, new_domain
 
     def _create_shift_candidate_feature(self, model, cons_features, var, domain_change, shift_damage):
         var_features = model.var_features[var.id]
         feat = torch.cat((cons_features, var_features, torch.Tensor([shift_damage])))
         return feat
+
+    def _pick_candidate_greedily(self, cons, shift_candidates):
+        var, new_domain, _ = min(shift_candidates, key=lambda t: t[2])
+        if self._action_history is not None:
+            self._action_history.add((cons.id, var.id, new_domain), ActionType.REPAIR_GREEDY)
+        return var, new_domain

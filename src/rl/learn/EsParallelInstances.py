@@ -90,7 +90,7 @@ class EsParallelInstances(GradientEstimator):
                 batch = random.choices(instances, k=self._batch_size)
                 batch_size = self._batch_size * self._num_trajectories
             gradient_estimate = self._run_instances_in_parallel(batch, fprl)
-            self._logger.info('success_rate=%.2f', self._num_successes / batch_size)
+            self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)
             return gradient_estimate
 
     def _run_instances_in_parallel(self, instances, fprl):

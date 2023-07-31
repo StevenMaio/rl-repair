@@ -106,7 +106,7 @@ class EnhancedModel(Model):
             constraint = Constraint.from_gurobi_constr(constraint_index,
                                                        gp_constr,
                                                        convert_ge_cons)
-            convert_cons = gp_constr.sense == '>' and convert_ge_cons
+            convert_cons = (gp_constr.sense == '>') and convert_ge_cons
             min_activity: float = 0
             max_activity: float = 0
             model._constraints.append(constraint)
@@ -131,6 +131,10 @@ class EnhancedModel(Model):
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
             violated |= constraint.is_violated()
+            logger.debug('CONSTRAINT_INITIALIZED id=%d min_activity=%.2f max_activity=%.2f',
+                         constraint.id,
+                         constraint.min_activity,
+                         constraint.max_activity)
             constraint_index += 1
         model._num_constraints = constraint_index
         largest_cons_size = max(map(lambda c: c.row.size, model.constraints))

@@ -131,6 +131,21 @@ class Constraint:
         constraint._gp_constraint = gp_constr
         return constraint
 
+    def reset(self, model):
+        row: Row = self.row
+        min_activity: float = 0
+        max_activity: float = 0
+        for index, coefficient in row:
+            var: "Variable" = model.get_var(index)
+            if coefficient > 0:
+                min_activity += var.lb * coefficient
+                max_activity += var.ub * coefficient
+            else:
+                min_activity += var.ub * coefficient
+                max_activity += var.lb * coefficient
+        self.min_activity = min_activity
+        self.max_activity = max_activity
+
     def __repr__(self) -> str:
         return f'Constraint(id={self._constraint_id}, rhs={self._rhs}, ' \
                f'sense=\'{self._sense}\', activity=[{self._min_activity}, {self._max_activity}])'

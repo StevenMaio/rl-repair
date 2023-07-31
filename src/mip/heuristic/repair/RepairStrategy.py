@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import List
+from typing import List, Tuple, Any
 
 
 class RepairStrategy(ABC):
@@ -21,3 +21,9 @@ class RepairStrategy(ABC):
     @property
     def num_moves(self):
         raise NotImplementedError("not implemented")
+
+    @abstractmethod
+    def find_shift_candidates(self,
+                              model: "Model",
+                              constraint: "Constraint") -> Tuple[List[Tuple[Any, Any, float]], bool]:
+        ...
