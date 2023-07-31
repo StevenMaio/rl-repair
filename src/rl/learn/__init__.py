@@ -12,3 +12,4 @@ from .EvolutionaryStrategiesSerial import EvolutionaryStrategiesSerial
 from .EsParallelTrajectories import EsParallelTrajectories
 from .EsParallelInstances import EsParallelInstances
 from .PolicyGradientSerial import PolicyGradientSerial
+from .PolicyGradientParallel import PolicyGradientParallel

@@ -14,7 +14,7 @@ from src.mip.propagation import LinearConstraintPropagator
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
 from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, EsParallelTrajectories, \
-    Adam, FirstOrderTrainer, PolicyGradientSerial
+    Adam, FirstOrderTrainer, PolicyGradientSerial, PolicyGradientParallel
 
 from src.utils import initialize_logger
 
@@ -147,7 +147,7 @@ def policy_gradient_serial_main():
                               discount_factor=DISCOUNT_FACTOR,
                               max_backtracks=MAX_BACKTRACKS)
 
-    gradient_estimator = PolicyGradientSerial(num_trajectories=NUM_TRAJECTORIES,
+    gradient_estimator = PolicyGradientParallel(num_trajectories=NUM_TRAJECTORIES,
                                               batch_size=BATCH_SIZE)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         init_trend=INIT_TREND,
