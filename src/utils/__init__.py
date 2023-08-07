@@ -39,6 +39,7 @@ def get_global_pool():
         return WORKER_POOL
     else:
         WORKER_POOL = mp.Pool(NUM_WORKERS)
+        WORKER_POOL_INITIALIZED = True
         return WORKER_POOL
 
 

@@ -1,6 +1,6 @@
-import random
-
 import torch
+import torch.multiprocessing as mp
+
 import os
 
 from src.rl.learn.val import LevelChecker
@@ -14,15 +14,13 @@ from src.mip.propagation import LinearConstraintPropagator
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
 from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, EsParallelTrajectories, \
-    Adam, FirstOrderTrainer, PolicyGradientSerial, PolicyGradientParallel
+    Adam, FirstOrderTrainer, PolicyGradientParallel
 
 from src.utils import initialize_logger
 
 import logging
 
 from src.utils.config import *
-
-import torch.multiprocessing as mp
 
 
 def serial_es_main():
@@ -148,7 +146,7 @@ def policy_gradient_serial_main():
                               max_backtracks=MAX_BACKTRACKS)
 
     gradient_estimator = PolicyGradientParallel(num_trajectories=NUM_TRAJECTORIES,
-                                              batch_size=BATCH_SIZE)
+                                                batch_size=BATCH_SIZE)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         init_trend=INIT_TREND,
                                         trend_weight=TREND_WEIGHT,
@@ -170,10 +168,9 @@ def policy_gradient_serial_main():
 
 
 if __name__ == '__main__':
+    mp.set_start_method('forkserver')
     initialize_logger(level=logging.INFO)
     torch.set_num_threads(NUM_THREADS)
-    mp.set_start_method('forkserver')
-    import time
 
-    #parallel_trajectories_es_main()
+    # parallel_trajectories_es_main()
     policy_gradient_serial_main()
