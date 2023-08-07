@@ -7,8 +7,7 @@ class KMovingMeans(TimeSeries):
     def reset(self, hard_reset=False):
         self._level = 0
         self._data[self._current_idx] = 0
-        if self._dampened:
-            self._initialized = False
+        self._initialized = self._dampened
 
     _dampened: bool
     _initialized: bool
@@ -23,14 +22,14 @@ class KMovingMeans(TimeSeries):
         self._level = 0
         self._k = k
         self._dampened = dampened
-        self._initialized = False
+        self._initialized = not dampened
 
     def add(self, data):
         if not self._initialized and not self._dampened:
             for idx in range(self._k):
                 self._data[idx] = data
-            self._current_idx = 1 % self._k
             self._level = data
+            self._initialized = True
         if self._initialized:
             self._level += (data - self._data[self._current_idx]) / self._k
             self._data[self._current_idx] = data
