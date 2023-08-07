@@ -28,7 +28,7 @@ def parallel_trajectories_es_main():
     INSTANCES = 'data/instances/k-clique/small'
     # INPUT_MODEL = 'data/torch_models/es-k-clique-small.pt'
     OUTPUT_MODEL = 'data/torch_models/es-k-clique-small.pt'
-    TRAINING_LOG = 'data/log/es-k-clique-small.txt'
+    TRAINING_LOG = 'data/logs/es-k-clique-small.txt'
     instances = [os.sep.join([INSTANCES, f]) for f in os.listdir(INSTANCES) if '.opb' in f or '.mps' in f]
     data_set = DataSet(instances,
                        validation_portion=VAL_PORTION,
@@ -56,7 +56,8 @@ def parallel_trajectories_es_main():
                                                 learning_parameter=LEARNING_PARAMETER,
                                                 num_workers=NUM_WORKERS,
                                                 batch_size=BATCH_SIZE)
-    time_series = KMovingMeans(k=K_MOVING_MEANS_K)
+    time_series = KMovingMeans(k=K_MOVING_MEANS_K,
+                               dampened=K_MOVING_MEANS_DAMPENED)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         times_series=time_series)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,

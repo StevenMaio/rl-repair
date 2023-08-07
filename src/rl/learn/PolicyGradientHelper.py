@@ -6,9 +6,8 @@ exact same state, at which the decision was made.
 import torch
 import logging
 
-from mip.model import DomainChange
 from src.mip.heuristic import FixPropRepairLearn
-from src.mip.model import VarType
+from src.mip.model import VarType, DomainChange
 from ..mip import EnhancedModel
 from ..utils import TensorList, ActionType
 

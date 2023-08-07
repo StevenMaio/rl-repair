@@ -28,7 +28,7 @@ def policy_gradient_serial_main():
     INSTANCES = 'data/instances/k-clique/small'
     # INPUT_MODEL = 'data/torch_models/pg-k-clique-small.pt'
     OUTPUT_MODEL = 'data/torch_models/pg-k-clique-small.pt'
-    TRAINING_LOG = 'data/log/pg-k-clique-small.txt'
+    TRAINING_LOG = 'data/logs/pg-k-clique-small.txt'
     instances = [os.sep.join([INSTANCES, f]) for f in os.listdir(INSTANCES) if '.opb' in f or '.mps' in f]
     data_set = DataSet(instances,
                        validation_portion=VAL_PORTION,
@@ -54,7 +54,8 @@ def policy_gradient_serial_main():
 
     gradient_estimator = PolicyGradientParallel(num_trajectories=NUM_TRAJECTORIES,
                                                 batch_size=BATCH_SIZE)
-    time_series = KMovingMeans(k=K_MOVING_MEANS_K)
+    time_series = KMovingMeans(k=K_MOVING_MEANS_K,
+                               dampened=K_MOVING_MEANS_DAMPENED)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         times_series=time_series)
     optimization_method = GradientAscent(learning_rate=LEARNING_RATE)

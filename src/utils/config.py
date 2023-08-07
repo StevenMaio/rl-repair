@@ -4,7 +4,7 @@ INSTANCES = 'data/instances/random3sat/small'
 
 # MDP configuration
 DISCOUNT_FACTOR = 0.4
-MAX_BACKTRACKS = 1
+MAX_BACKTRACKS = 0
 
 # Training configuration
 INPUT_MODEL = 'data/torch_models/random3sat-med-es-serial.pt'
@@ -41,6 +41,7 @@ LEVEL_WEIGHT = 0.2
 TREND_WEIGHT = 0.2
 
 # K-Moving Means Config
-K_MOVING_MEANS_K = 10
+K_MOVING_MEANS_K = 5
+K_MOVING_MEANS_DAMPENED = False
 
 NUM_THREADS = 2
