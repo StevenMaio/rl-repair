@@ -1,6 +1,7 @@
 from torch import nn
 
-from src.rl.architecture import GraphNeuralNetwork, MultilayerPerceptron
+from src.rl.architecture import MultilayerPerceptron
+from src.rl.architecture.GraphNeuralNetworkV2 import GraphNeuralNetworkV2 as GraphNeuralNetwork
 
 
 class PolicyArchitecture(nn.Module):
