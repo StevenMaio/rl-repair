@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple
 
 import torch
@@ -25,11 +26,14 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
     _scoring_function: MultilayerPerceptron
     _sample_index: bool
 
+    _logger: logging.Logger
+
     def __init__(self,
                  scoring_function: MultilayerPerceptron,
                  sample_index: bool = True):
         self._scoring_function = scoring_function
         self._sample_index = sample_index
+        self._logger = logging.getLogger(__package__)
 
     def select_variable(self, model: "EnhancedModel") -> "Variable":
         var_ids = []
@@ -47,7 +51,10 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
         scores = self._scoring_function(features)
         if self._sample_index:
             probabilities = torch.softmax(scores, dim=0)
-            var_idx = var_ids[torch.multinomial(probabilities.T, 1).item()]
+            idx = torch.multinomial(probabilities.T, 1).item()
+            var_idx = var_ids[idx]
+            p = probabilities[idx]
+            self._logger.debug('VAR_SAMPLED idx=%d p=%.4f', idx, p)
         else:
             idx = torch.argmax(scores)
             var_idx = var_ids[idx]

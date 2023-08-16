@@ -2,6 +2,7 @@ import logging
 import sys
 from enum import IntEnum
 from typing import List
+from .LogEvent import LogEvent
 
 import random
 
