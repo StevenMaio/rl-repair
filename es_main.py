@@ -53,7 +53,7 @@ def parallel_trajectories_es_main():
                               max_backtracks=MAX_BACKTRACKS)
 
     gradient_estimator = EsParallelTrajectories(num_trajectories=NUM_TRAJECTORIES,
-                                                learning_parameter=LEARNING_PARAMETER,
+                                                noise_std_deviation=ES_NOISE_STD_DEVIATION,
                                                 num_workers=NUM_WORKERS,
                                                 batch_size=BATCH_SIZE)
     time_series = KMovingMeans(k=K_MOVING_MEANS_K,
