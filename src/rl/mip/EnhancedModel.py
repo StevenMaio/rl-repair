@@ -62,6 +62,10 @@ class EnhancedModel(Model):
     def cons_features(self) -> List[torch.Tensor]:
         return self._cons_features
 
+    @property
+    def graph(self):
+        return self._instance_graph
+
     @staticmethod
     def from_gurobi_model(gp_model: gurobipy.Model,
                           solve_lp: bool = False,

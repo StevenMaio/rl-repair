@@ -22,7 +22,7 @@ from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 
-def _run_trajectory(fprl, instance, rng_seed, learning_param):
+def _run_trajectory(fprl, instance, rng_seed, noise_std_deviation):
     """Runtime procedure for inner loop
     """
     torch.set_num_threads(NUM_THREADS)
@@ -37,7 +37,7 @@ def _run_trajectory(fprl, instance, rng_seed, learning_param):
         noise_generator = NoiseGenerator(policy_architecture.parameters())
         torch.manual_seed(rng_seed)
         noise = noise_generator.sample()
-        noise.scale(learning_param)
+        noise.scale(noise_std_deviation)
         noise.add_to_iterator(policy_architecture.parameters())
         fprl.find_solution(model)
         return fprl.reward, rng_seed
@@ -51,7 +51,7 @@ class EsParallelTrajectories(GradientEstimator):
     _num_trajectories: int
     _batch_size: int
     _use_all_samples: bool
-    _learning_parameter: float
+    _noise_std_deviation: float
     _num_workers: int
 
     _worker_pool: mp.Pool
@@ -59,10 +59,10 @@ class EsParallelTrajectories(GradientEstimator):
     def __init__(self,
                  num_trajectories: int,
                  num_workers: int,
-                 learning_parameter: float,
+                 noise_std_deviation: float,
                  batch_size: int = float('inf')):
         self._num_trajectories = num_trajectories
-        self._learning_parameter = learning_parameter
+        self._noise_std_deviation = noise_std_deviation
         self._num_workers = num_workers
         self._worker_pool = get_global_pool()
         self._num_successes = 0
@@ -96,11 +96,11 @@ class EsParallelTrajectories(GradientEstimator):
                                             map(lambda t: (fprl,
                                                            t[0],
                                                            t[1],
-                                                           self._learning_parameter),
+                                                           self._noise_std_deviation),
                                                 input_pairs)
                                             )
         self._process_trajectory_results(results, gradient_estimate, noise_generator)
-        gradient_estimate.scale(1 / len(instances) / self._num_trajectories / self._learning_parameter)
+        gradient_estimate.scale(1 / len(instances) / self._num_trajectories / self._noise_std_deviation)
         return gradient_estimate
 
     def _process_trajectory_results(self,

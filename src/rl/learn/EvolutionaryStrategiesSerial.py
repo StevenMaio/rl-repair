@@ -9,8 +9,6 @@ from src.rl.utils import TensorList, NoiseGenerator
 from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
-from src.utils import FORMAT_STR
-
 
 class EvolutionaryStrategiesSerial(GradientEstimator):
     _num_successes: int
@@ -19,15 +17,15 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
     _num_trajectories: int
     _batch_size: int
     _use_all_samples: bool
-    _learning_parameter: float
+    _noise_std_deviation: float
     _logger: logging.Logger
 
     def __init__(self,
                  num_trajectories: int,
-                 learning_parameter: float,
+                 noise_std_deviation: float,
                  batch_size: int = float('inf')):
         self._num_trajectories = num_trajectories
-        self._learning_parameter = learning_parameter
+        self._noise_std_deviation = noise_std_deviation
         self._num_successes = 0
         if batch_size == float('inf'):
             self._use_all_samples = True
@@ -56,7 +54,7 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
             gradient_estimate.add_to_self(self._get_instance_gradient_estimate(fprl,
                                                                                problem_instance,
                                                                                noise_generator))
-        gradient_estimate.scale(1 / len(instances) / self._learning_parameter)
+        gradient_estimate.scale(1 / len(instances) / self._noise_std_deviation)
         return gradient_estimate
 
     def _estimate_gradient_batched_iteration(self, instances, fprl):
@@ -68,7 +66,7 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
             gradient_estimate.add_to_self(self._get_instance_gradient_estimate(fprl,
                                                                                problem_instance,
                                                                                noise_generator))
-        gradient_estimate.scale(1 / self._batch_size / self._learning_parameter)
+        gradient_estimate.scale(1 / self._batch_size / self._noise_std_deviation)
         return gradient_estimate
 
     def _get_instance_gradient_estimate(self, fprl, instance, noise_generator):
@@ -82,13 +80,13 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
                                                 convert_ge_cons=True)
         for trajectory_num in range(self._num_trajectories):
             noise = noise_generator.sample()
-            noise.scale(self._learning_parameter)
+            noise.scale(self._noise_std_deviation)
             noise.add_to_iterator(policy_architecture.parameters())
             fprl.find_solution(model)
             noise.scale(-1)
             noise.add_to_iterator(policy_architecture.parameters())
             if fprl.reward != 0:
-                noise.scale(-fprl.reward / self._learning_parameter)
+                noise.scale(-fprl.reward / self._noise_std_deviation)
                 gradient_estimate.add_to_self(noise)
                 self._num_successes += 1
             model.reset()

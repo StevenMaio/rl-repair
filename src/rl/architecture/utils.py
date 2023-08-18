@@ -12,5 +12,5 @@ def create_block(node_feat, neighbor_feat, edge_features):
     :return:
     """
     node_feat = node_feat.unsqueeze(0)
-    node_feat = node_feat.expand(neighbor_feat.shape)
+    node_feat = node_feat.expand((neighbor_feat.shape[0], node_feat.shape[1]))
     return torch.cat((node_feat, neighbor_feat, edge_features), dim=1)

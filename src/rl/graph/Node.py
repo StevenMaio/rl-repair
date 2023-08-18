@@ -11,11 +11,10 @@ from src.rl.params import GnnParams
 from src.utils import IndexEnum
 
 
-class FeatIdx(IndexEnum):
+class VarFeatIdx(IndexEnum):
     """
-    Class that maps features to their respective indices.
+    Class that maps variable features to their respective indices.
     """
-    # variable features
     IS_BINARY = auto()
     IS_INTEGER = auto()
     IS_CONTINUOUS = auto()
@@ -24,7 +23,11 @@ class FeatIdx(IndexEnum):
     APPEARANCE_SCORE = auto()
     OBJECTIVE_COEF = auto()
 
-    # constraint features
+
+class ConsFeatIdx(IndexEnum):
+    """
+    Class that maps constraint features to their respective indices.
+    """
     IS_LE_CONSTRAINT = auto()
     IS_EQ_CONSTRAINT = auto()
     VIOLATION = auto()
@@ -32,6 +35,8 @@ class FeatIdx(IndexEnum):
     IS_FEASIBLE = auto()
     IS_VIOLATED = auto()
     PORTION_FIXED_VARIABLES = auto()
+    MIN_ACTIVITY = auto()
+    MAX_ACTIVITY = auto()
 
 
 class NodeType(Enum):
@@ -66,30 +71,32 @@ class Node:
     def _update_var_node(self, model, initialize):
         var = self._data
         if initialize:
-            self._features = torch.zeros(GnnParams.num_node_features)
+            self._features = torch.zeros(GnnParams.num_var_node_features)
             if var.type == VarType.BINARY:
-                self._features[FeatIdx.IS_BINARY] = 1.0
+                self._features[VarFeatIdx.IS_BINARY] = 1.0
             elif var.type == VarType.INTEGER:
-                self._features[FeatIdx.IS_INTEGER] = 1.0
+                self._features[VarFeatIdx.IS_INTEGER] = 1.0
             else:
-                self._features[FeatIdx.IS_CONTINUOUS] = 1.0
-            self._features[FeatIdx.OBJECTIVE_COEF] = var.objective_coefficient
-            self._features[FeatIdx.APPEARANCE_SCORE] = var.column.size / len(model.constraints)
-        self._features[FeatIdx.LOCAL_DOMAIN_SIZE] = var.local_domain.size() / var.global_domain.size()
-        self._features[FeatIdx.IS_FIXED] = 1 if var.lb == var.ub else 0
+                self._features[VarFeatIdx.IS_CONTINUOUS] = 1.0
+            self._features[VarFeatIdx.OBJECTIVE_COEF] = var.objective_coefficient
+            self._features[VarFeatIdx.APPEARANCE_SCORE] = var.column.size / len(model.constraints)
+        self._features[VarFeatIdx.LOCAL_DOMAIN_SIZE] = var.local_domain.size() / var.global_domain.size()
+        self._features[VarFeatIdx.IS_FIXED] = 1 if var.lb == var.ub else 0
 
     def _update_cons_node(self, model, initialize):
         cons = self._data
         if initialize:
-            self._features = torch.zeros(GnnParams.num_node_features)
+            self._features = torch.zeros(GnnParams.num_cons_node_features)
             if cons.sense == Sense.LE:
-                self._features[FeatIdx.IS_LE_CONSTRAINT] = 1.0
+                self._features[ConsFeatIdx.IS_LE_CONSTRAINT] = 1.0
             elif cons.sense == Sense.EQ:
-                self._features[FeatIdx.IS_EQ_CONSTRAINT] = 1.0
-            self._features[FeatIdx.NUM_VARIABLES] = cons.row.size / model.largest_cons_size
-        self._features[FeatIdx.IS_VIOLATED] = cons.is_violated()
-        self._features[FeatIdx.IS_FEASIBLE] = 1 - cons.is_violated()
-        self._features[FeatIdx.VIOLATION] = cons.compute_violation()
+                self._features[ConsFeatIdx.IS_EQ_CONSTRAINT] = 1.0
+            self._features[ConsFeatIdx.NUM_VARIABLES] = cons.row.size / model.largest_cons_size
+        self._features[ConsFeatIdx.IS_VIOLATED] = cons.is_violated()
+        self._features[ConsFeatIdx.IS_FEASIBLE] = 1 - cons.is_violated()
+        self._features[ConsFeatIdx.VIOLATION] = cons.compute_violation()
+        self._features[ConsFeatIdx.MIN_ACTIVITY] = cons.min_activity
+        self._features[ConsFeatIdx.MAX_ACTIVITY] = cons.max_activity
 
     @property
     def edges(self) -> List["Edge"]:

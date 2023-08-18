@@ -165,11 +165,13 @@ class PolicyGradientHelper:
         features = []
         cons_features = model.cons_features[cons.id]
         for idx, (var, new_domain, shift_damage) in enumerate(shift_candidates):
-            features.append(self._create_shift_candidate_feature(model,
-                                                                 cons_features,
-                                                                 var,
-                                                                 new_domain,
-                                                                 shift_damage))
+            features.append(
+                self._create_shift_candidate_feature(model,
+                                                     cons.id,
+                                                     cons_features,
+                                                     var,
+                                                     new_domain,
+                                                     shift_damage))
             if var.id == var_id:
                 policy_idx = idx
         features = torch.stack(features)
@@ -177,9 +179,19 @@ class PolicyGradientHelper:
         probabilities = torch.softmax(scores, dim=0)
         return probabilities[policy_idx]
 
-    def _create_shift_candidate_feature(self, model, cons_features, var, domain_change, shift_damage):
+    def _create_shift_candidate_feature(self,
+                                        model,
+                                        cons_id,
+                                        cons_features,
+                                        var,
+                                        domain_change,
+                                        shift_damage):
         var_features = model.var_features[var.id]
-        feat = torch.cat((cons_features, var_features, torch.Tensor([shift_damage])))
+        edge = model.graph.edges[(var.id, cons_id)]
+        feat = torch.cat((cons_features,
+                          var_features,
+                          edge.features,
+                          torch.Tensor([shift_damage])))
         return feat
 
     @staticmethod

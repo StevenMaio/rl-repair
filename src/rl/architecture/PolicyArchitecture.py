@@ -30,7 +30,8 @@ class PolicyArchitecture(nn.Module):
         self._cons_scoring_function = MultilayerPerceptron([num_learned_node_features,
                                                             64,
                                                             1])
-        self._var_scoring_function = MultilayerPerceptron([2 * num_learned_node_features + num_edge_features,
+        self._var_scoring_function = MultilayerPerceptron([2 * num_learned_node_features + num_edge_features
+                                                                + params.additional_var_scoring_features,
                                                            64,
                                                            1])
         self._gnn = GraphNeuralNetwork(params)

@@ -13,7 +13,7 @@ from src.mip.model import *
 
 from src.rl.graph import Graph
 from src.rl.params import GnnParams
-from src.rl.graph.Node import FeatIdx
+from src.rl.graph.Node import VarFeatIdx, ConsFeatIdx
 from src.rl.architecture import GraphNeuralNetwork, MultilayerPerceptron
 
 
@@ -44,17 +44,17 @@ class TestGraph(TestCase):
         z_node = G.var_nodes[2]
 
         # construct features
-        expected_x_feat = torch.zeros(GnnParams.num_node_features)
-        expected_x_feat[FeatIdx.IS_BINARY] = 1.0
-        expected_x_feat[FeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
+        expected_x_feat = torch.zeros(GnnParams.num_var_node_features)
+        expected_x_feat[VarFeatIdx.IS_BINARY] = 1.0
+        expected_x_feat[VarFeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
 
-        expected_y_feat = torch.zeros(GnnParams.num_node_features)
-        expected_y_feat[FeatIdx.IS_INTEGER] = 1.0
-        expected_y_feat[FeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
+        expected_y_feat = torch.zeros(GnnParams.num_var_node_features)
+        expected_y_feat[VarFeatIdx.IS_INTEGER] = 1.0
+        expected_y_feat[VarFeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
 
-        expected_z_feat = torch.zeros(GnnParams.num_node_features)
-        expected_z_feat[FeatIdx.IS_CONTINUOUS] = 1.0
-        expected_z_feat[FeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
+        expected_z_feat = torch.zeros(GnnParams.num_var_node_features)
+        expected_z_feat[VarFeatIdx.IS_CONTINUOUS] = 1.0
+        expected_z_feat[VarFeatIdx.LOCAL_DOMAIN_SIZE] = 1.0
 
         self.assertTrue(torch.allclose(expected_x_feat, x_node.features))
         self.assertTrue(torch.allclose(expected_y_feat, y_node.features))
@@ -65,14 +65,14 @@ class TestGraph(TestCase):
         c1_node = G.cons_nodes[1]
 
         # expected c1 feautures
-        expected_c0_feat = torch.zeros(GnnParams.num_node_features)
-        expected_c0_feat[FeatIdx.IS_EQ_CONSTRAINT] = 1.0
-        expected_c0_feat[FeatIdx.NUM_VARIABLES] = 1.0
+        expected_c0_feat = torch.zeros(GnnParams.num_cons_node_features)
+        expected_c0_feat[ConsFeatIdx.IS_EQ_CONSTRAINT] = 1.0
+        expected_c0_feat[ConsFeatIdx.NUM_VARIABLES] = 1.0
 
         # expected c1 feautures
-        expected_c1_feat = torch.zeros(GnnParams.num_node_features)
-        expected_c1_feat[FeatIdx.IS_LE_CONSTRAINT] = 1.0
-        expected_c1_feat[FeatIdx.NUM_VARIABLES] = 1.0
+        expected_c1_feat = torch.zeros(GnnParams.num_cons_node_features)
+        expected_c1_feat[ConsFeatIdx.IS_LE_CONSTRAINT] = 1.0
+        expected_c1_feat[ConsFeatIdx.NUM_VARIABLES] = 1.0
 
         self.assertTrue(torch.allclose(expected_c0_feat, c0_node.features))
         self.assertTrue(torch.allclose(expected_c1_feat, c1_node.features))

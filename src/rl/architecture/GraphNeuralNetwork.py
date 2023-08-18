@@ -1,3 +1,8 @@
+"""
+Graph neural network implementation.
+"""
+from typing import List
+
 import torch
 from torch import nn
 
@@ -9,7 +14,8 @@ from itertools import chain
 
 
 class GraphNeuralNetwork(nn.Module):
-    _num_node_features: int
+    _var_node_dimensions: List[int]
+    _cons_node_dimensions: List[int]
     _num_edge_features: int
     _num_iterations: int
 
@@ -23,15 +29,12 @@ class GraphNeuralNetwork(nn.Module):
                  params: "GnnParams"):
         super().__init__()
 
-        num_node_features = params.num_node_features
+        num_var_node_features = params.num_var_node_features
+        num_cons_node_features = params.num_cons_node_features
         num_edge_features = params.num_edge_features
         num_iterations = params.num_gnn_iterations
         intermediate_layers = params.intermediate_layers
         hidden_layers = params.hidden_layers
-
-        self._num_node_features = num_node_features
-        self._num_edge_features = num_edge_features
-        self._num_iterations = num_iterations
 
         # convert iteration_sizes and hidden_layers to iterables
         if isinstance(intermediate_layers, int):
@@ -41,28 +44,37 @@ class GraphNeuralNetwork(nn.Module):
         assert (len(hidden_layers) == num_iterations)
         assert (len(intermediate_layers) == num_iterations)
 
+        self._var_node_dimensions = [num_var_node_features] + intermediate_layers
+        self._cons_node_dimensions = [num_cons_node_features] + intermediate_layers
+        self._num_edge_features = num_edge_features
+        self._num_iterations = num_iterations
+
         var_update_functions = []
         var_messenger_functions = []
         cons_update_functions = []
         cons_messenger_functions = []
         batch_normalizations = []
 
-        for input_size, output_size, hidden_layer in zip(chain((num_node_features,), intermediate_layers[:-1]),
-                                                         intermediate_layers,
-                                                         hidden_layers):
-            var_update_functions.append(MultilayerPerceptron([2 * input_size,
+        for var_input_size, cons_input_size, output_size, hidden_layer in zip(
+                chain((num_var_node_features,), intermediate_layers[:-1]),
+                chain((num_cons_node_features,), intermediate_layers[:-1]),
+                intermediate_layers,
+                hidden_layers):
+            msg_input_size = var_input_size + cons_input_size + num_edge_features
+            var_update_functions.append(MultilayerPerceptron([var_input_size + output_size,
                                                               hidden_layer,
                                                               output_size]))
-            cons_update_functions.append(MultilayerPerceptron([2 * input_size,
+            cons_update_functions.append(MultilayerPerceptron([cons_input_size + output_size,
                                                                hidden_layer,
                                                                output_size]))
-            var_messenger_functions.append(MultilayerPerceptron([2 * input_size + num_edge_features,
+            var_messenger_functions.append(MultilayerPerceptron([msg_input_size,
                                                                  hidden_layer,
-                                                                 input_size]))
-            cons_messenger_functions.append(MultilayerPerceptron([2 * input_size + num_edge_features,
+                                                                 output_size]))
+            cons_messenger_functions.append(MultilayerPerceptron([msg_input_size,
                                                                   hidden_layer,
-                                                                  input_size]))
-            batch_normalizations.append(nn.BatchNorm1d(output_size))
+                                                                  output_size]))
+            batch_normalizations.append(nn.BatchNorm1d(output_size,
+                                                       affine=params.add_batch_norm_params))
 
         self._var_update_functions = nn.ModuleList(var_update_functions)
         self._var_messenger_functions = nn.ModuleList(var_messenger_functions)
@@ -106,7 +118,7 @@ class GraphNeuralNetwork(nn.Module):
                 msg_output = self._var_messenger_functions[iter_no](msg_input).sum(dim=0)
                 update_input = torch.cat((feat, msg_output))
             else:
-                update_input = torch.cat((feat, torch.zeros_like(feat)))
+                update_input = torch.cat((feat, torch.zeros(self._cons_node_dimensions[iter_no + 1])))
             updated_vars.append(self._var_update_functions[iter_no](update_input))
         for idx, (cons_node, feat) in enumerate(zip(graph.cons_nodes, cons_features)):
             coefs = []
@@ -120,10 +132,10 @@ class GraphNeuralNetwork(nn.Module):
                 neighbor_features = torch.stack(neighbor_features)
                 coefs = torch.stack(coefs)
                 msg_input = create_block(feat, neighbor_features, coefs)
-                msg_output = self._var_messenger_functions[iter_no](msg_input).sum(dim=0)
+                msg_output = self._cons_messenger_functions[iter_no](msg_input).sum(dim=0)
                 update_input = torch.cat((feat, msg_output))
             else:
-                update_input = torch.cat((feat, torch.zeros_like(feat)))
+                update_input = torch.cat((feat, torch.zeros(self._var_node_dimensions[iter_no + 1])))
             updated_cons.append(self._cons_update_functions[iter_no](update_input))
         num_vars = len(updated_vars)
         features = torch.stack([*updated_vars, *updated_cons])

@@ -1,7 +1,7 @@
 from src.mip.model import Model
 
 from itertools import chain
-from typing import List
+from typing import List, Tuple, Dict
 
 from src.rl.graph.Node import Node, NodeType
 from src.rl.graph.Edge import Edge
@@ -10,12 +10,12 @@ from src.rl.graph.Edge import Edge
 class Graph:
     _var_nodes: List[Node]
     _cons_nodes: List[Node]
-    _edges: List[Edge]
+    _edges: Dict[Tuple[int, int], Edge]  # always indexed by (var_id, cons_id)
 
     def __init__(self, model: Model):
         self._var_nodes = []
         self._cons_nodes = []
-        self._edges = []
+        self._edges = {}
         for var in model.variables:
             self._var_nodes.append(Node(model, var, NodeType.VAR))
         for cons in model.constraints:
@@ -27,7 +27,7 @@ class Graph:
                 e = Edge(var_node, cons_node, coef)
                 cons_node.edges.append(e)
                 var_node.edges.append(e)
-                self._edges.append(e)
+                self._edges[(var_id, cons.id)] = e
 
     @property
     def var_nodes(self) -> List[Node]:
@@ -38,7 +38,7 @@ class Graph:
         return self._cons_nodes
 
     @property
-    def edges(self) -> List[Edge]:
+    def edges(self) -> Dict[Tuple[int, int], Edge]:
         return self._edges
 
     def update(self, model):

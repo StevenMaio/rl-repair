@@ -53,11 +53,8 @@ class LearnableRepairWalk(RepairWalk):
         features = []
         cons_features = model.cons_features[cons.id]
         for var, new_domain, shift_damage in candidates:
-            features.append(self._create_shift_candidate_feature(model,
-                                                                 cons_features,
-                                                                 var,
-                                                                 new_domain,
-                                                                 shift_damage))
+            features.append(
+                self._create_shift_candidate_feature(model, cons.id, cons_features, var, new_domain, shift_damage))
         features = torch.stack(features)
         scores = self._var_scoring_function(features)
         if self._sample_indices:
@@ -70,9 +67,13 @@ class LearnableRepairWalk(RepairWalk):
             self._action_history.add((cons.id, var.id, new_domain), ActionType.REPAIR_VAR_SELECT)
         return var, new_domain
 
-    def _create_shift_candidate_feature(self, model, cons_features, var, domain_change, shift_damage):
+    def _create_shift_candidate_feature(self, model, cons_id, cons_features, var, domain_change, shift_damage):
         var_features = model.var_features[var.id]
-        feat = torch.cat((cons_features, var_features, torch.Tensor([shift_damage])))
+        edge = model.graph.edges[(var.id, cons_id)]
+        feat = torch.cat((cons_features,
+                          var_features,
+                          edge.features,
+                          torch.Tensor([shift_damage])))
         return feat
 
     def _pick_candidate_greedily(self, cons, shift_candidates):
