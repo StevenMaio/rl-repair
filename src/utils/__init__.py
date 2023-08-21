@@ -69,7 +69,4 @@ def create_rng_seeds(num_seeds):
     :return:
     """
     rng_seeds = [torch.randint(0x8000_0000, 0xffff_ffff, (1, )) for _ in range(num_seeds)]
-    if num_seeds > 1:
-        return rng_seeds
-    else:
-        return rng_seeds[0].item()
+    return rng_seeds

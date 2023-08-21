@@ -107,7 +107,7 @@ class EsParallelTrajectories(GradientEstimator):
                                     results,
                                     gradient_estimate,
                                     noise_generator):
-        next_seed = create_rng_seeds(1)
+        next_seed = create_rng_seeds(1)[0]
         for reward, rng_seed in results:
             if reward > 0:
                 torch.manual_seed(rng_seed)
