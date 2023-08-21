@@ -7,7 +7,7 @@ TODO:
 
 Author: Steven Maio
 """
-import random
+import torch
 
 from typing import List
 from abc import ABC, abstractmethod
@@ -58,8 +58,8 @@ class RandomFixingOrder(FixingOrderStrategy):
                 binary_variables.append(var.id)
             elif var.type == VarType.INTEGER:
                 integer_variables.append(var.id)
-        random.shuffle(binary_variables)
-        random.shuffle(integer_variables)
+        binary_variables = [binary_variables[i] for i in torch.randperm(len(binary_variables))]
+        integer_variables = [integer_variables[i] for i in torch.randperm(len(integer_variables))]
         self._indices = binary_variables + integer_variables
         self._size = len(self._indices)
         self._current_index = 0

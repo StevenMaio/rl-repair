@@ -4,7 +4,6 @@ trajectories are run in parallel. However, I think it may make more sense
 to instead run the instances in parallel, that is, the trajectories for a
 single instance are run on the same process, but we spawn multiple processes.
 """
-import random
 import logging
 import torch
 import itertools
@@ -80,7 +79,8 @@ class EsParallelTrajectories(GradientEstimator):
                 batch = instances
                 batch_size = len(instances) * self._num_trajectories
             else:
-                batch = random.choices(instances, k=self._batch_size)
+                indices = torch.randint(len(instances), (self._batch_size,))
+                batch = [instances[i] for i in indices]
                 batch_size = self._batch_size * self._num_trajectories
             gradient_estimate = self._run_instances_in_parallel(batch, fprl)
             self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)
@@ -107,9 +107,11 @@ class EsParallelTrajectories(GradientEstimator):
                                     results,
                                     gradient_estimate,
                                     noise_generator):
+        next_seed = create_rng_seeds(1)
         for reward, rng_seed in results:
             if reward > 0:
                 torch.manual_seed(rng_seed)
                 noise = noise_generator.sample()
                 gradient_estimate.add_to_self(noise)
                 self._num_successes += 1
+        torch.manual_seed(next_seed)

@@ -2,7 +2,6 @@ import logging
 from typing import List, Tuple
 
 import torch
-import random
 
 from src.rl.architecture import MultilayerPerceptron, PolicyArchitecture
 from src.mip.model import VarType
@@ -87,7 +86,7 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
         upper_bound: int = int(local_domain.upper_bound)
 
         if self._sample_index:
-            lb_first = random.random() <= p
+            lb_first = torch.rand(1) <= p
         else:
             lb_first = p < 0.5
 

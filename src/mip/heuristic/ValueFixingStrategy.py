@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Tuple
 
-import random
+import torch
 
 
 class ValueFixingStrategy(ABC):
@@ -26,7 +26,7 @@ class RandomValueFixing(ValueFixingStrategy):
         local_domain: "Domain" = var.local_domain
         lower_bound: int = int(local_domain.lower_bound)
         upper_bound: int = int(local_domain.upper_bound)
-        if random.random() <= 0.5:
+        if torch.rand(1) <= 0.5:
             left_value, right_value = lower_bound, upper_bound
         else:
             left_value, right_value = upper_bound, lower_bound

@@ -1,4 +1,3 @@
-import random
 import logging
 import torch
 
@@ -61,7 +60,8 @@ class EvolutionaryStrategiesSerial(GradientEstimator):
         policy_architecture = fprl.policy_architecture
         noise_generator = NoiseGenerator(policy_architecture.parameters())
         gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
-        batch = random.choices(instances, k=self._batch_size)
+        indices = torch.randint(len(instances), (self._batch_size,))
+        batch = [instances[i] for i in indices]
         for problem_instance in batch:
             gradient_estimate.add_to_self(self._get_instance_gradient_estimate(fprl,
                                                                                problem_instance,

@@ -2,9 +2,10 @@ from typing import Callable, Tuple, List, Any
 
 from .RepairStrategy import RepairStrategy
 
-import random
 import logging
 import math
+
+import torch
 
 from ...model import Sense, VarType, Domain, DomainChange
 
@@ -102,7 +103,8 @@ class RepairWalk(RepairStrategy):
 
     def _sample_violated_constraint(self, model: "Model") -> "Constraint":
         violated_constraints = list(filter(lambda c: c.is_violated(), model.constraints))
-        return random.choice(violated_constraints)
+        idx = torch.randint(len(violated_constraints), (1, )).item()
+        return violated_constraints[idx]
 
     def find_shift_candidates(self,
                               model: "Model",
@@ -144,7 +146,7 @@ class RepairWalk(RepairStrategy):
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
             return var, domain_change
         elif len(shift_candidates) > 0:
-            if random.random() <= self._noise_parameter:
+            if torch.rand(1) <= self._noise_parameter:
                 var, new_domain = self._sample_var_candidate(model, constraint, shift_candidates)
             else:
                 var, new_domain = self._pick_candidate_greedily(constraint,
@@ -239,7 +241,8 @@ class RepairWalk(RepairStrategy):
         :param candidates:
         :return:
         """
-        var, new_domain, _ = random.choice(candidates)
+        idx = torch.randint(len(candidates), (1, )).item()
+        var, new_domain, _ = candidates[idx]
         return var, new_domain
 
     @staticmethod
