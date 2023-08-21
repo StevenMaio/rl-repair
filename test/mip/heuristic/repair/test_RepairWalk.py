@@ -17,7 +17,7 @@ from src.mip.model import Model, VarType, Sense, DomainChange, Domain, Variable
 from src.mip.heuristic.repair.RepairWalk import RepairWalk
 from src.mip.params import RepairWalkParams
 
-import random
+import torch
 import logging
 
 from src.utils import initialize_logger, REPAIR_LEVEL
@@ -40,7 +40,7 @@ class TestRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
         model = Model()
 
         x_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -77,7 +77,7 @@ class TestRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
         model = Model()
 
         x_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -122,7 +122,7 @@ class TestRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
         model = Model()
 
         x_id: int = model.add_var(variable_type=VarType.CONTINUOUS,
@@ -172,7 +172,7 @@ class TestRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
         model = Model()
 
         x_id: int = model.add_var(variable_type=VarType.CONTINUOUS,
@@ -217,7 +217,7 @@ class TestRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
         model = Model()
 
         x_id: int = model.add_var(variable_type=VarType.BINARY)

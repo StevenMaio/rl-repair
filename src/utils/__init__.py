@@ -1,11 +1,9 @@
 import logging
 import sys
 from enum import IntEnum
-from typing import List
 from .LogEvent import LogEvent
 
-import random
-
+import torch
 import torch.multiprocessing as mp
 
 from .constants import VAR_NODE, CONS_NODE
@@ -44,22 +42,6 @@ def get_global_pool():
         return WORKER_POOL
 
 
-def range_permutation(n: int) -> List[int]:
-    """
-    Generates a permutation of the integers from 0 to n-1
-
-    TODO: seed the rng so that we can replicate behavior
-    :param n:
-    :return:
-    """
-    numbers: List[int] = list(range(n))
-    i: int
-    for i in range(n):
-        j: int = random.randint(i, n - 1)
-        numbers[i], numbers[j] = numbers[j], numbers[i]
-    return numbers
-
-
 def compute_interval_distance(lb, ub, x):
     """
     Computes the distance between a point x and the interval [lb, ub]
@@ -81,10 +63,10 @@ class IndexEnum(IntEnum):
         return IntEnum._generate_next_value_(name, start, count, last_values)
 
 
-def create_rng_seeds(num_trajectories):
+def create_rng_seeds(num_seeds):
     """Creates a list of rng_seeds
-    :param num_trajectories:
+    :param num_seeds:
     :return:
     """
-    rng_seeds = [random.randint(0x8000_0000_0000_0000, 0xffff_ffff_ffff_ffff) for _ in range(num_trajectories)]
+    rng_seeds = [torch.randint(0x8000_0000, 0xffff_ffff, (1, )) for _ in range(num_seeds)]
     return rng_seeds

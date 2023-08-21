@@ -4,7 +4,7 @@ training, validation and testing.
 """
 from typing import List
 
-import random
+import torch
 
 
 class DataSet:
@@ -13,14 +13,15 @@ class DataSet:
     _testing_instances: List[object]
 
     def __init__(self, instances, validation_portion=0.2, testing_portion=0.2, rng_seed=None):
-        rng = random.Random(rng_seed)
+        rng = torch.Generator()
+        rng.manual_seed(rng_seed)
         N = len(instances)
         indices = list(range(N))
 
         val_size = int(validation_portion * N)
         test_size = int(testing_portion * N)
 
-        removed_indices = random.sample(indices, val_size + test_size)
+        removed_indices = torch.randint(N, (val_size + test_size, ), generator=rng)
         val_indices = removed_indices[:val_size]
         test_indices = removed_indices[val_size:]
 

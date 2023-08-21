@@ -9,7 +9,7 @@ from src.mip.heuristic.repair.RepairWalk import RepairWalk
 from src.mip.heuristic.FixingOrderStrategy import *
 from src.mip.heuristic.ValueFixingStrategy import *
 
-import random
+import torch
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -29,7 +29,7 @@ class TestFixPropRepair(TestCase):
         Tests to see if a set covering constraint is propagated in FPR
         :return:
         """
-        random.seed(1)
+        torch.manual_seed(1)
         model = Model()
         x_id: int = model.add_var(variable_type=VarType.BINARY)
         y_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -59,7 +59,7 @@ class TestFixPropRepair(TestCase):
         Tests to see if a partition constraint is propagated in FPR
         :return:
         """
-        random.seed(100000)
+        torch.manual_seed(100000)
         model = Model()
         x_id: int = model.add_var(variable_type=VarType.BINARY)
         y_id: int = model.add_var(variable_type=VarType.BINARY)
@@ -89,7 +89,7 @@ class TestFixPropRepair(TestCase):
         Tests to see if a packing constraint is praopagated
         :return:
         """
-        random.seed(100000)
+        torch.manual_seed(100000)
         model = Model()
         x_id: int = model.add_var(variable_type=VarType.BINARY)
         y_id: int = model.add_var(variable_type=VarType.BINARY)

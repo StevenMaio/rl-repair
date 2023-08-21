@@ -9,8 +9,6 @@ from .utils import create_block
 from src.rl.graph import Graph
 from src.rl.architecture import MultilayerPerceptron
 
-from itertools import chain
-
 from typing import List
 
 

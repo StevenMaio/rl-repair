@@ -1,5 +1,5 @@
 import logging
-import random
+import torch
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -40,7 +40,8 @@ class PolicyGradientSerial(GradientEstimator):
             batch = instances
             batch_size = len(instances) * self._num_trajectories
         else:
-            batch = random.choices(instances, k=self._batch_size)
+            indices = torch.randint(len(instances), (self._batch_size, ))
+            batch = [instances[i] for i in indices]
             batch_size = self._batch_size * self._num_trajectories
         self._compute_batch_gradient(fprl, batch, gradient_estimate)
         self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)

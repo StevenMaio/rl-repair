@@ -4,11 +4,10 @@ entirely avoid serial computation of the gradient approximation. This model
 runs the instances in parallel, and then returns the reward, the action history
 and the instance. If an instance is successfully solved, then a history is returned.
 
-At the end, all of the histories are processed in serial.
+At the end, all histories are processed in serial.
 """
 import itertools
 import logging
-import random
 import torch
 
 import torch.multiprocessing as mp
@@ -74,7 +73,8 @@ class PolicyGradientParallel(GradientEstimator):
             batch = instances
             batch_size = len(instances) * self._num_trajectories
         else:
-            batch = random.choices(instances, k=self._batch_size)
+            indices = torch.randint(len(instances), (self._batch_size,))
+            batch = [instances[i] for i in indices]
             batch_size = self._batch_size * self._num_trajectories
         self._compute_batch_gradient(fprl, batch, gradient_estimate)
         self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)

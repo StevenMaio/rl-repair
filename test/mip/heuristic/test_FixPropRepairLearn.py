@@ -10,7 +10,6 @@ from src.mip.heuristic.repair import RepairStrategy
 
 from src.mip.heuristic import FixPropRepairLearn
 
-import random
 import torch
 
 RNG_SEED = 1
@@ -27,7 +26,7 @@ class TestFixPropRepairLearn(TestCase):
     _model: EnhancedModel
 
     def setUp(self):
-        random.seed(RNG_SEED)
+        torch.manual_seed(RNG_SEED)
         model = EnhancedModel()
 
         x = model.add_var(variable_type=VarType.BINARY)

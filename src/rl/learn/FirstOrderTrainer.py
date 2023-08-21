@@ -106,7 +106,9 @@ class FirstOrderTrainer:
                 self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
             else:
                 self._init_test_score = -1
-            self._logger.info('BEGIN_TRAINING test_score=%.2f', self._init_test_score)
+            self._logger.info('BEGIN_TRAINING test_score=%.2f torch_seed=%d',
+                              self._init_test_score,
+                              torch.random.initial_seed())
         for epoch in range(self._current_epoch, self._num_epochs):
             gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                            fprl)

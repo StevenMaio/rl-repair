@@ -1,5 +1,4 @@
 import logging
-import random
 import torch
 
 from unittest import TestCase
@@ -34,7 +33,7 @@ class TestLearnableRepairWalk(TestCase):
         num_samples: int = 1_000
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
 
         # create the architecture
         model = EnhancedModel()
@@ -125,7 +124,7 @@ class TestLearnableRepairWalk(TestCase):
         """
         rng_seed: int = 0
         self._logger.info('starting test rng_seed=%d', rng_seed)
-        random.seed(rng_seed)
+        torch.manual_seed(rng_seed)
 
         num_learned_node_features = GnnParams.intermediate_layers
 
