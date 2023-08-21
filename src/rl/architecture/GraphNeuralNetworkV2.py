@@ -1,7 +1,6 @@
 """
 The second implementation of the graph neural network. This version splits batch
 normalization of the node representations into variable nodes and constraint nodes.
-Additionally, an initial batch normalization is done at the beginning of the network.
 """
 import torch
 from torch import nn
@@ -42,12 +41,6 @@ class GraphNeuralNetworkV2(nn.Module):
         num_iterations = params.num_gnn_iterations
         intermediate_layers = params.intermediate_layers
         hidden_layers = params.hidden_layers
-
-        # initial batch normalizations
-        self._var_init_batch_norms = nn.BatchNorm1d(num_var_node_features,
-                                                    affine=params.add_batch_norm_params)
-        self._cons_init_batch_norms = nn.BatchNorm1d(num_cons_node_features,
-                                                     affine=params.add_batch_norm_params)
 
         # convert iteration_sizes and hidden_layers to iterables
         if isinstance(intermediate_layers, int):
@@ -102,8 +95,6 @@ class GraphNeuralNetworkV2(nn.Module):
     def forward(self, graph: Graph):
         var_features = torch.stack(list(map(lambda u: u.features, graph.var_nodes)))
         cons_features = torch.stack(list(map(lambda u: u.features, graph.cons_nodes)))
-        var_features = self._var_init_batch_norms(var_features)
-        cons_features = self._cons_init_batch_norms(cons_features)
         for iter_no in range(self._num_iterations):
             var_features, cons_features = self._forward_iteration(graph,
                                                                   var_features,

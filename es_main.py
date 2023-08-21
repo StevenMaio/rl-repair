@@ -60,8 +60,6 @@ def parallel_trajectories_es_main():
                                dampened=K_MOVING_MEANS_DAMPENED)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         times_series=time_series)
-    val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
-                                        times_series=time_series)
     optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
                                 num_epochs=NUM_EPOCHS,
