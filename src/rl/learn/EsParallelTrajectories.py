@@ -21,10 +21,11 @@ from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 
-def _run_trajectory(fprl, instance, rng_seed, noise_std_deviation):
+def _run_trajectory(fprl, instance, noise_seed, noise_std_deviation):
     """Runtime procedure for inner loop
     """
     torch.set_num_threads(NUM_THREADS)
+    seed = create_rng_seeds(1)[0]
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
         env = gp.Env()
@@ -34,12 +35,13 @@ def _run_trajectory(fprl, instance, rng_seed, noise_std_deviation):
                                                 gnn=policy_architecture.gnn,
                                                 convert_ge_cons=True)
         noise_generator = NoiseGenerator(policy_architecture.parameters())
-        torch.manual_seed(rng_seed)
+        torch.manual_seed(noise_seed)
         noise = noise_generator.sample()
         noise.scale(noise_std_deviation)
         noise.add_to_iterator(policy_architecture.parameters())
+        torch.manual_seed(seed)
         fprl.find_solution(model)
-        return fprl.reward, rng_seed
+        return fprl.reward, noise_seed
 
 
 class EsParallelTrajectories(GradientEstimator):
