@@ -16,19 +16,17 @@ class DataSet:
         rng = torch.Generator()
         rng.manual_seed(rng_seed)
         N = len(instances)
-        indices = list(range(N))
 
         val_size = int(validation_portion * N)
         test_size = int(testing_portion * N)
 
-        removed_indices = torch.randint(N, (val_size + test_size, ), generator=rng)
-        val_indices = removed_indices[:val_size]
-        test_indices = removed_indices[val_size:]
+        permutation = torch.randperm(N, generator=rng)
 
-        for idx in removed_indices:
-            indices.remove(idx)
+        val_indices = permutation[:val_size]
+        test_indices = permutation[val_size:val_size + test_size]
+        training_indices = permutation[val_size + test_size:]
 
-        self._training_instances = [instances[idx] for idx in indices]
+        self._training_instances = [instances[idx] for idx in training_indices]
         self._validation_instances = [instances[idx] for idx in val_indices]
         self._testing_instances = [instances[idx] for idx in test_indices]
 
