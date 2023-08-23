@@ -60,7 +60,11 @@ def parallel_trajectories_es_main():
                                dampened=K_MOVING_MEANS_DAMPENED)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         times_series=time_series)
-    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
+    optimization_method = Adam(learning_rate=LEARNING_RATE,
+                               first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,
+                               second_moment_decay_rate=SECOND_MOMENT_DECAY_RATE,
+                               epsilon=EPSILON)
+    optimization_method.init(fprl)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
                                 num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator,

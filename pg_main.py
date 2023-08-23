@@ -13,8 +13,7 @@ from src.mip.propagation import LinearConstraintPropagator
 
 from src.rl.architecture import PolicyArchitecture
 from src.rl.params import GnnParams
-from src.rl.learn import EvolutionaryStrategiesSerial, GradientAscent, EsParallelTrajectories, \
-    Adam, FirstOrderTrainer, PolicyGradientParallel
+from src.rl.learn import Adam, FirstOrderTrainer, PolicyGradientParallel
 
 from src.utils import initialize_logger
 from src.utils.timeseries.KMovingMeans import KMovingMeans
@@ -58,7 +57,11 @@ def policy_gradient_serial_main():
                                dampened=K_MOVING_MEANS_DAMPENED)
     val_progress_checker = LevelChecker(max_num_worse_iters=NUM_ALLOWABLE_WORSE_VALS,
                                         times_series=time_series)
-    optimization_method = GradientAscent(learning_rate=LEARNING_RATE)
+    optimization_method = Adam(learning_rate=LEARNING_RATE,
+                               first_moment_decay_rate=FIRST_MOMENT_DECAY_RATE,
+                               second_moment_decay_rate=SECOND_MOMENT_DECAY_RATE,
+                               epsilon=EPSILON)
+    optimization_method.init(fprl)
     trainer = FirstOrderTrainer(optimization_method=optimization_method,
                                 num_epochs=NUM_EPOCHS,
                                 gradient_estimator=gradient_estimator,

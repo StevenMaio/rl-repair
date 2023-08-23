@@ -13,7 +13,7 @@ from src.rl.utils import TensorList
 
 
 class Adam(FirstOrderMethod):
-    _step_size: float
+    _learning_rate: float
     _fmdr: float        # first moment decay rate
     _1st_mom_decay: torch.Tensor
     _smdr: float        # second moment decay rate
@@ -24,19 +24,22 @@ class Adam(FirstOrderMethod):
     _epsilon: torch.Tensor
 
     def __init__(self,
-                 fprl: "FPRL",
-                 step_size: float,
+                 learning_rate: float,
                  first_moment_decay_rate: float,
                  second_moment_decay_rate: float,
                  epsilon: float = 1e-9):
-        policy_architecture = fprl.policy_architecture
-        self._step_size = step_size
+        self._learning_rate = learning_rate
         self._fmdr = first_moment_decay_rate
         self._1st_mom_decay = torch.Tensor([1.0])
         self._smdr = second_moment_decay_rate
         self._2nd_mom_decay = torch.Tensor([1.0])
         self._iter_num = 0
         self._epsilon = torch.Tensor([epsilon])
+        self._first_moment_estimate = None
+        self._second_moment_estimate = None
+
+    def init(self, fprl: "FixPropRepairLearn"):
+        policy_architecture = fprl.policy_architecture
         self._first_moment_estimate = TensorList.zeros_like(policy_architecture.parameters())
         self._second_moment_estimate = TensorList.zeros_like(policy_architecture.parameters())
 
@@ -71,4 +74,4 @@ class Adam(FirstOrderMethod):
                 m_hat = m / (1 - self._1st_mom_decay)
                 # compute corrected 2nd moment estimate
                 v_hat = v / (1 - self._2nd_mom_decay)
-                p.add_(self._step_size * m_hat / (v_hat.sqrt_() + self._epsilon))
+                p.add_(self._learning_rate * m_hat / (v_hat.sqrt_() + self._epsilon))
