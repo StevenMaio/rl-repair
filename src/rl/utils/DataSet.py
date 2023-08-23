@@ -2,9 +2,13 @@
 A class that separates a given collection of instances into three categories:
 training, validation and testing.
 """
+import os
+import json
+import torch
+
 from typing import List
 
-import torch
+from src.utils.config import PARAMS
 
 
 class DataSet:
@@ -14,7 +18,10 @@ class DataSet:
 
     def __init__(self, instances, validation_portion=0.2, testing_portion=0.2, rng_seed=None):
         rng = torch.Generator()
-        rng.manual_seed(rng_seed)
+        if rng_seed is not None:
+            rng.manual_seed(rng_seed)
+        else:
+            rng.seed()
         N = len(instances)
 
         val_size = int(validation_portion * N)
@@ -41,3 +48,10 @@ class DataSet:
     @property
     def testing_instances(self):
         return self._testing_instances
+
+    @staticmethod
+    def from_config(config: dict):
+        params = config[PARAMS]
+        instances_location = config['instances']
+        instances = [os.sep.join([instances_location, f]) for f in os.listdir(instances_location) if '.opb' in f or '.mps' in f]
+        return DataSet(instances, **params)

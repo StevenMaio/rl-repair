@@ -53,18 +53,15 @@ class EsParallelTrajectories(GradientEstimator):
     _batch_size: int
     _use_all_samples: bool
     _noise_std_deviation: float
-    _num_workers: int
 
     _worker_pool: mp.Pool
 
     def __init__(self,
                  num_trajectories: int,
-                 num_workers: int,
                  noise_std_deviation: float,
                  batch_size: int = float('inf')):
         self._num_trajectories = num_trajectories
         self._noise_std_deviation = noise_std_deviation
-        self._num_workers = num_workers
         self._worker_pool = get_global_pool()
         self._num_successes = 0
         if batch_size == float('inf'):

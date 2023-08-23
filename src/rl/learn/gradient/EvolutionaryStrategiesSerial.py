@@ -5,7 +5,7 @@ import gurobipy as gp
 from gurobipy import GRB
 
 from src.rl.utils import TensorList, NoiseGenerator
-from .GradientEstimator import GradientEstimator
+from rl.learn.gradient.GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 

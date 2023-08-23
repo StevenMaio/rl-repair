@@ -16,12 +16,12 @@ class LevelChecker(ValidationProgressChecker):
 
     def __init__(self,
                  max_num_worse_iters,
-                 times_series
+                 time_series
                  ):
         self._num_worse_iters = 0
         self._max_num_worse_iters = max_num_worse_iters
         self._best_level = 0
-        self._time_series = times_series
+        self._time_series = time_series
 
     def update_progress(self, val_score: float):
         self._time_series.add(val_score)

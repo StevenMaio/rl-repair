@@ -9,9 +9,10 @@ from src.mip.model import VarType
 from src.rl.mip import EnhancedModel
 from src.rl.utils import ActionHistory, ActionType
 
-from src.mip.heuristic.repair import RepairStrategy
-from src.mip.propagation import Propagator
+from src.mip.heuristic.repair import RepairStrategy, repair_strategy_from_config
+from src.mip.propagation import Propagator, LinearConstraintPropagator
 from src.mip.heuristic import FixPropRepair
+from src.utils.config import POLICY_ARCHITECTURE_CONFIG, REPAIR_STRAT_CONFIG, PARAMS
 
 from .FprNode import FprNode
 from .FixingOrderStrategy import FixingOrderStrategy
@@ -105,11 +106,9 @@ class FixPropRepairLearn(FixPropRepair):
     _sample_indices: bool
 
     def __init__(self,
-                 fixing_order_architecture,
-                 value_fixing_architecture,
+                 policy_architecture,
                  repair_strategy: RepairStrategy,
                  propagator: Propagator,
-                 policy_architecture,
                  discount_factor: float = 0.999,
                  max_absolute_value: float = float('inf'),
                  propagate_fixings: bool = True,
@@ -118,6 +117,8 @@ class FixPropRepairLearn(FixPropRepair):
                  max_backtracks: int = 2,
                  sample_indices: bool = True,
                  in_training: bool = False):
+        fixing_order_architecture = policy_architecture.fixing_order_architecture
+        value_fixing_architecture = policy_architecture.value_fixing_architecture
         fixing_order_strategy = _FprlFixingOrderStrategy(fixing_order_architecture,
                                                          sample_index=sample_indices)
         value_fixing_strategy = _FprlValueSelectionStrategy(value_fixing_architecture,
@@ -304,3 +305,21 @@ class FixPropRepairLearn(FixPropRepair):
         self._repair_strategy._sample_indices = new_value
         self._fixing_order_strategy._sample_indices = new_value
         self._value_fixing_strategy._sample_indices = new_value
+
+    @staticmethod
+    def from_config(config: dict):
+        propagator = LinearConstraintPropagator()
+        params = config[PARAMS]
+        sample_indices = params['sample_indices']
+
+        policy_architecture = PolicyArchitecture.from_config(config[POLICY_ARCHITECTURE_CONFIG])
+        repair_strategy = repair_strategy_from_config(config[REPAIR_STRAT_CONFIG])
+        repair_strategy.sample_indices = sample_indices
+        repair_strategy.cons_scoring_function = policy_architecture.cons_scoring_function
+        repair_strategy.var_scoring_function = policy_architecture.var_scoring_function
+
+        return FixPropRepairLearn(policy_architecture,
+                                  repair_strategy,
+                                  propagator,
+                                  **params
+                                  )

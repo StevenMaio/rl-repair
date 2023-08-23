@@ -1,5 +1,7 @@
+import torch
 from torch import nn
 
+from src.rl.params import GnnParams
 from src.rl.architecture import MultilayerPerceptron
 from src.rl.architecture.GraphNeuralNetworkV2 import GraphNeuralNetworkV2 as GraphNeuralNetwork
 
@@ -58,3 +60,10 @@ class PolicyArchitecture(nn.Module):
     @property
     def var_scoring_function(self):
         return self._var_scoring_function
+
+    @staticmethod
+    def from_config(config: dict):
+        policy_architecture = PolicyArchitecture(GnnParams)
+        if config['load_architecture'] and 'input_model' in config:
+            policy_architecture.load_state_dict(torch.load(config['input_model']))
+        return policy_architecture

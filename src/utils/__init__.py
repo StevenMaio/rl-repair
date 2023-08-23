@@ -20,6 +20,7 @@ REPAIR_NAME: str = 'REPAIR'
 
 FORMAT_STR = "%(asctime)s %(levelname)s %(name)s.%(filename)s::%(funcName)s %(message)s"
 
+
 def initialize_logger(filename: str = '',
                       level: int = logging.DEBUG):
     global LOGGER_INITIALIZED
@@ -32,14 +33,20 @@ def initialize_logger(filename: str = '',
         logging.addLevelName(REPAIR_LEVEL, REPAIR_NAME)
 
 
+def initialize_global_pool(num_workers):
+    global WORKER_POOL_INITIALIZED, WORKER_POOL
+    if not WORKER_POOL_INITIALIZED:
+        WORKER_POOL = mp.Pool(num_workers)
+        WORKER_POOL_INITIALIZED = True
+        return WORKER_POOL
+
+
 def get_global_pool():
     global WORKER_POOL_INITIALIZED, WORKER_POOL
     if WORKER_POOL_INITIALIZED:
         return WORKER_POOL
     else:
-        WORKER_POOL = mp.Pool(NUM_WORKERS)
-        WORKER_POOL_INITIALIZED = True
-        return WORKER_POOL
+        raise Exception('worker pool not initialized')
 
 
 def compute_interval_distance(lb, ub, x):
@@ -68,5 +75,5 @@ def create_rng_seeds(num_seeds):
     :param num_seeds:
     :return:
     """
-    rng_seeds = [torch.randint(0x8000_0000, 0xffff_ffff, (1, )) for _ in range(num_seeds)]
+    rng_seeds = [torch.randint(0x8000_0000, 0xffff_ffff, (1,)) for _ in range(num_seeds)]
     return rng_seeds
