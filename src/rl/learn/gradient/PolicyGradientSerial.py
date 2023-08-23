@@ -5,8 +5,8 @@ import gurobipy as gp
 from gurobipy import GRB
 
 from .GradientEstimator import GradientEstimator
-from ..mip import EnhancedModel
-from ..utils import TensorList
+from rl.mip import EnhancedModel
+from rl.utils import TensorList
 
 from .PolicyGradientHelper import PolicyGradientHelper
 

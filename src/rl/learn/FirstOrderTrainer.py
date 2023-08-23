@@ -3,9 +3,11 @@ import itertools
 import torch
 import torch.multiprocessing as mp
 
-from src.utils.config import NUM_WORKERS, NUM_THREADS
-from .FirstOrderMethod import FirstOrderMethod
-from .GradientEstimator import GradientEstimator
+from src.utils.config import NUM_THREADS, PARAMS, GRADIENT_ESTIMATOR_CONFIG, OPTIMIZATION_METHOD_CONFIG, \
+    VAL_PROGRESS_CHECKER_CONFIG
+from src.rl.learn.gradient import gradient_estimator_from_config, GradientEstimator
+from src.rl.learn.optim import FirstOrderMethod, optimizer_fom_config
+from src.rl.learn.val import progress_checker_from_config
 
 from src.mip.heuristic import FixPropRepairLearn
 
@@ -44,13 +46,11 @@ class FirstOrderTrainer:
     _num_epochs: int
     _logger: logging.Logger
     _iters_to_progress_check: int
-    _num_allowable_worse_vals: int
     _num_trajectories: int
     _val_progress_checker: ValidationProgressChecker
 
     # parallel stuff
     _eval_in_parallel: bool
-    _num_workers: int
     _worker_pool: mp.Pool
 
     #
@@ -66,22 +66,18 @@ class FirstOrderTrainer:
                  num_epochs: int,
                  iters_to_progress_check: int,
                  val_progress_checker: ValidationProgressChecker,
-                 num_allowable_worse_vals: int = 5,
-                 num_trajectories: int = 5,
+                 num_eval_trajectories: int = 5,
                  log_file: str = None,
-                 eval_in_parallel: bool = False,
-                 num_workers: int = NUM_WORKERS):
+                 eval_in_parallel: bool = False):
         self._optimization_method = optimization_method
         self._gradient_estimator = gradient_estimator
         self._num_epochs = num_epochs
         self._iters_to_progress_check = iters_to_progress_check
-        self._num_allowable_worse_vals = num_allowable_worse_vals
-        self._num_trajectories = num_trajectories
+        self._num_trajectories = num_eval_trajectories
         self._logger = logging.getLogger(__package__)
         self._best_policy = PolicyArchitecture(GnnParams)
         self._val_progress_checker = val_progress_checker
         self._eval_in_parallel = eval_in_parallel
-        self._num_workers = num_workers
         if self._eval_in_parallel:
             self._worker_pool = get_global_pool()
         if log_file is not None:
@@ -96,6 +92,7 @@ class FirstOrderTrainer:
               restart: bool = True,
               trainer_data: str = None):
         policy_architecture = fprl.policy_architecture
+        self._optimization_method.init(fprl)
         if restart:
             self._optimization_method.reset()
             self._best_policy.load_state_dict(policy_architecture.state_dict())
@@ -187,3 +184,16 @@ class FirstOrderTrainer:
                 if trajectory_num < self._num_trajectories - 1:
                     model.reset()
         return num_successes / batch_size
+
+    @staticmethod
+    def from_config(config: dict):
+        params = config[PARAMS]
+        gradient_estimator = gradient_estimator_from_config(config[GRADIENT_ESTIMATOR_CONFIG])
+        optimization_method = optimizer_fom_config(config[OPTIMIZATION_METHOD_CONFIG])
+        # TODO: create the validation progress checker
+        val_progress_checker = progress_checker_from_config(config[VAL_PROGRESS_CHECKER_CONFIG])
+
+        return FirstOrderTrainer(optimization_method=optimization_method,
+                                 gradient_estimator=gradient_estimator,
+                                 val_progress_checker=val_progress_checker,
+                                 **params)

@@ -81,3 +81,27 @@ class LearnableRepairWalk(RepairWalk):
         if self._action_history is not None:
             self._action_history.add((cons.id, var.id, new_domain), ActionType.REPAIR_GREEDY)
         return var, new_domain
+
+    @property
+    def cons_scoring_function(self):
+        return self._cons_scoring_function
+
+    @cons_scoring_function.setter
+    def cons_scoring_function(self, new_value):
+        self._cons_scoring_function = new_value
+
+    @property
+    def var_scoring_function(self):
+        return self._var_scoring_function
+
+    @var_scoring_function.setter
+    def var_scoring_function(self, new_value):
+        self._var_scoring_function = new_value
+
+    @property
+    def sample_indices(self):
+        return self._sample_indices
+
+    @sample_indices.setter
+    def sample_indices(self, new_value):
+        self._sample_indices = new_value

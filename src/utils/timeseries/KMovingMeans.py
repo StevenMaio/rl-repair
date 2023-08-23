@@ -5,9 +5,7 @@ from typing import List
 class KMovingMeans(TimeSeries):
 
     def reset(self, hard_reset=False):
-        self._level = 0
-        self._data[self._current_idx] = 0
-        self._initialized = self._dampened
+        self._initialized = False
 
     _dampened: bool
     _initialized: bool
@@ -25,10 +23,16 @@ class KMovingMeans(TimeSeries):
         self._initialized = not dampened
 
     def add(self, data):
-        if not self._initialized and not self._dampened:
-            for idx in range(self._k):
-                self._data[idx] = data
-            self._level = data
+        if not self._initialized:
+            if not self._dampened:
+                for idx in range(self._k):
+                    self._data[idx] = data
+                self._level = data
+            else:
+                for idx in range(self._k):
+                    self._data[idx] = 0
+                self._data[self._current_idx] = data
+                self._level = data / self._k
             self._initialized = True
         if self._initialized:
             self._level += (data - self._data[self._current_idx]) / self._k
