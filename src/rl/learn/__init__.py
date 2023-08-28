@@ -1,9 +1,9 @@
-from rl.learn.optim.FirstOrderMethod import FirstOrderMethod
+from src.rl.learn.optim.FirstOrderMethod import FirstOrderMethod
 
 from .FirstOrderTrainer import FirstOrderTrainer
 
 # First order optimization methods
 
 # Gradient estimators
-from rl.learn.gradient.EvolutionaryStrategiesSerial import EvolutionaryStrategiesSerial
-from rl.learn.gradient.PolicyGradientSerial import PolicyGradientSerial
+from src.rl.learn.gradient.EvolutionaryStrategiesSerial import EvolutionaryStrategiesSerial
+from src.rl.learn.gradient.PolicyGradientSerial import PolicyGradientSerial

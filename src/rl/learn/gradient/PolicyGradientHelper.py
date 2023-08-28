@@ -8,8 +8,8 @@ import logging
 
 from src.mip.heuristic import FixPropRepairLearn
 from src.mip.model import VarType, DomainChange
-from rl.mip import EnhancedModel
-from rl.utils import TensorList, ActionType
+from src.rl.mip import EnhancedModel
+from src.rl.utils import TensorList, ActionType
 
 
 class PolicyGradientHelper:

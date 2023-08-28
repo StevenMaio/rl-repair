@@ -18,8 +18,8 @@ from gurobipy import GRB
 from src.utils import get_global_pool
 from src.utils.config import NUM_THREADS
 from .GradientEstimator import GradientEstimator
-from rl.mip import EnhancedModel
-from rl.utils import TensorList
+from src.rl.mip import EnhancedModel
+from src.rl.utils import TensorList
 
 from .PolicyGradientHelper import PolicyGradientHelper
 
