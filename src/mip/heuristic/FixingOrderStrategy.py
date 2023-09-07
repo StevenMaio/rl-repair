@@ -19,10 +19,11 @@ class FixingOrderStrategy(ABC):
     name: str
 
     @abstractmethod
-    def select_variable(self, model: "Model") -> "Variable":
+    def select_variable(self, model: "Model", generator=None) -> "Variable":
         """
         Computes the next variable to be fixed. Should return None if all the
         integer variables have been fixed.
+        :param generator:
         :param model:
         :return: the next variable to be fixed.
         """
@@ -64,7 +65,7 @@ class RandomFixingOrder(FixingOrderStrategy):
         self._size = len(self._indices)
         self._current_index = 0
 
-    def select_variable(self, model: "Model") -> Variable:
+    def select_variable(self, model: "Model", generator=None) -> Variable:
         # previous_index: int = self._current_index
         # previous_increment: int = self._last_increment
         # while self._current_index < self._size:
@@ -110,7 +111,7 @@ class LeftRightOrder(FixingOrderStrategy):
         self._size = len(self._indices)
         self._current_index = 0
 
-    def select_variable(self, model: "Model") -> "Variable":
+    def select_variable(self, model: "Model", generator=None) -> "Variable":
         # previous_index: int = self._current_index
         # previous_increment: int = self._last_increment
         # self._last_increment = 0

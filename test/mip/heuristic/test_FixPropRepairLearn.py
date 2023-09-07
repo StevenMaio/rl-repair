@@ -18,7 +18,7 @@ RNG_SEED = 1
 class FakeRepairStrategy(RepairStrategy):
     name: str = "FakeRepairStrategy"
 
-    def repair_domain(self, model: "Model", repair_changes: list["DomainChange"]) -> bool:
+    def repair_domain(self, model: "Model", repair_changes: list["DomainChange"], generator=None) -> bool:
         return False
 
 

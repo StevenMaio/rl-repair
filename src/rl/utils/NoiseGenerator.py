@@ -3,19 +3,20 @@ from typing import List, Iterator
 import torch
 
 from .TensorList import TensorList
-from torch.distributions import Normal
 
 
 class NoiseGenerator:
-    _distributions: List[Normal]
+    _std_deviations: List[torch.Tensor]
 
     def __init__(self, tensors: Iterator[torch.Tensor]):
-        self._distributions = [Normal(torch.zeros_like(t), torch.ones_like(t)) for t in tensors]
+        self._std_deviations = [torch.ones_like(t) for t in tensors]
 
-    def sample(self, in_shared_mem=False):
+    def sample(self, generator=None, in_shared_mem=False):
         noises = []
-        for distribution in self._distributions:
-            epsilon = distribution.sample()
+        for std in self._std_deviations:
+            epsilon = torch.normal(0,
+                                   std=std,
+                                   generator=generator)
             if in_shared_mem:
                 epsilon.share_memory_()
             noises.append(epsilon)

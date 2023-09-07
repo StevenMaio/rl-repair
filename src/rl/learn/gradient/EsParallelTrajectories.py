@@ -21,11 +21,11 @@ from .GradientEstimator import GradientEstimator
 from src.rl.mip import EnhancedModel
 
 
-def _run_trajectory(fprl, instance, noise_seed, noise_std_deviation):
+def _run_trajectory(fprl, instance, noise_seed, rng_seed, noise_std_deviation):
     """Runtime procedure for inner loop
     """
     torch.set_num_threads(NUM_THREADS)
-    seed = create_rng_seeds(1)[0]
+    generator = torch.Generator()
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
         env = gp.Env()
@@ -35,12 +35,12 @@ def _run_trajectory(fprl, instance, noise_seed, noise_std_deviation):
                                                 gnn=policy_architecture.gnn,
                                                 convert_ge_cons=True)
         noise_generator = NoiseGenerator(policy_architecture.parameters())
-        torch.manual_seed(noise_seed)
-        noise = noise_generator.sample()
+        generator.manual_seed(noise_seed)
+        noise = noise_generator.sample(generator=generator)
         noise.scale(noise_std_deviation)
         noise.add_to_iterator(policy_architecture.parameters())
-        torch.manual_seed(seed)
-        fprl.find_solution(model)
+        generator.manual_seed(rng_seed)
+        fprl.find_solution(model, generator=generator)
         return fprl.reward, noise_seed
 
 
@@ -89,12 +89,15 @@ class EsParallelTrajectories(GradientEstimator):
         policy_architecture = fprl.policy_architecture
         noise_generator = NoiseGenerator(policy_architecture.parameters())
         gradient_estimate = TensorList.zeros_like(policy_architecture.parameters())
-        input_pairs = [itertools.product([i], create_rng_seeds(self._num_trajectories)) for i in instances]
-        input_pairs = itertools.chain(*input_pairs)
+        seed_inputs = zip(map(lambda t: t.item(), create_rng_seeds(self._num_trajectories)),
+                          map(lambda t: t.item(), create_rng_seeds(self._num_trajectories)))
+        input_pairs = itertools.product(instances, seed_inputs)
+        input_pairs = [(u, *v) for u, v in input_pairs]
         results = self._worker_pool.starmap(_run_trajectory,
                                             map(lambda t: (fprl,
                                                            t[0],
                                                            t[1],
+                                                           t[2],
                                                            self._noise_std_deviation),
                                                 input_pairs)
                                             )
@@ -106,11 +109,10 @@ class EsParallelTrajectories(GradientEstimator):
                                     results,
                                     gradient_estimate,
                                     noise_generator):
-        next_seed = create_rng_seeds(1)[0]
-        for reward, rng_seed in results:
+        generator = torch.Generator()
+        for reward, noise_seed in results:
             if reward > 0:
-                torch.manual_seed(rng_seed)
-                noise = noise_generator.sample()
+                generator.manual_seed(noise_seed)
+                noise = noise_generator.sample(generator=generator)
                 gradient_estimate.add_to_self(noise)
                 self._num_successes += 1
-        torch.manual_seed(next_seed)
