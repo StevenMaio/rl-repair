@@ -64,6 +64,7 @@ class PolicyArchitecture(nn.Module):
     @staticmethod
     def from_config(config: dict):
         policy_architecture = PolicyArchitecture(GnnParams)
-        if config['load_architecture'] and 'input_model' in config:
-            policy_architecture.load_state_dict(torch.load(config['input_model']))
+        input_model = config.get('input_model', None)
+        if input_model is not None:
+            policy_architecture.load_state_dict(torch.load(input_model))
         return policy_architecture

@@ -36,6 +36,7 @@ def initialize_logger(filename: str = '',
 def initialize_global_pool(num_workers):
     global WORKER_POOL_INITIALIZED, WORKER_POOL
     if not WORKER_POOL_INITIALIZED:
+        mp.set_start_method('forkserver')
         WORKER_POOL = mp.Pool(num_workers)
         WORKER_POOL_INITIALIZED = True
         return WORKER_POOL
