@@ -59,11 +59,10 @@ class FixPropRepair:
         self._discount_factor = discount_factor
         self._max_backtracks = max_backtracks
 
-    def _find_solution_helper_node_loop(self,
-                                        model: Model,
-                                        head: FprNode) -> bool:
+    def _find_solution_helper_node_loop(self, model: Model, head: FprNode, generator=None) -> bool:
         """
         Helper method that contains the inner loop logic of FPR
+        :param generator:
         """
         head.visited = True
         infeasible: bool = False
@@ -88,7 +87,9 @@ class FixPropRepair:
         if infeasible and self._repair:
             self._logger.debug("starting repair")
             repair_changes: list[DomainChange] = []
-            success: bool = self._repair_strategy.repair_domain(model, repair_changes)
+            success: bool = self._repair_strategy.repair_domain(model,
+                                                                repair_changes,
+                                                                generator=generator)
             self._logger.debug("repair success=%d", success)
             self._reward *= pow(self._discount_factor, self._repair_strategy.num_moves)
             if success:
@@ -98,9 +99,12 @@ class FixPropRepair:
                 infeasible = False
         if infeasible and self._backtrack_on_infeasibility:
             return False
-        next_var: Variable = self._fixing_order_strategy.select_variable(model)
+        next_var: Variable = self._fixing_order_strategy.select_variable(model,
+                                                                         generator=generator)
         if next_var is not None:
-            left_val, right_val = self._value_fixing_strategy.select_fixing_value(model, next_var)
+            left_val, right_val = self._value_fixing_strategy.select_fixing_value(model,
+                                                                                  next_var,
+                                                                                  generator=generator)
 
             left_fixing: DomainChange = DomainChange.create_fixing(next_var, left_val)
             left = FprNode(head, next_var.id, left_fixing)
@@ -113,7 +117,7 @@ class FixPropRepair:
         else:
             return not model.violated
 
-    def find_solution(self, model: Model, solution_filename=None):
+    def find_solution(self, model: Model, solution_filename=None, generator=None):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -125,6 +129,7 @@ class FixPropRepair:
         has continuous variables, then the LP which results from the fixings
         will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
+        :param generator:
         :param solution_filename:
         :param model:
         :return:
@@ -142,7 +147,9 @@ class FixPropRepair:
             node: FprNode = search_stack[-1]
             if not node.visited:
                 self._reward *= self._discount_factor
-                success: bool = self._find_solution_helper_node_loop(model, node)
+                success: bool = self._find_solution_helper_node_loop(model,
+                                                                     node,
+                                                                     generator=generator)
                 if success:
                     continue_dive = False
                     continue

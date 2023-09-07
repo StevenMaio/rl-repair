@@ -30,7 +30,7 @@ class LearnableRepairWalk(RepairWalk):
         self._sample_indices = sample_indices
         self._action_history = None
 
-    def _sample_violated_constraint(self, model: "EnhancedModel") -> "Constraint":
+    def _sample_violated_constraint(self, model: "EnhancedModel", generator=None) -> "Constraint":
         cons_ids = []
         features = []
         for cons in model.constraints:
@@ -43,13 +43,15 @@ class LearnableRepairWalk(RepairWalk):
         scores = self._cons_scoring_function(features)
         if self._sample_indices:
             probabilities = torch.softmax(scores, dim=0)
-            cons_idx = cons_ids[torch.multinomial(probabilities.T, 1).item()]
+            cons_idx = cons_ids[torch.multinomial(probabilities.T,
+                                                  1,
+                                                  generator=generator).item()]
         else:
             argmax = torch.argmax(scores)
             cons_idx = cons_ids[argmax]
         return model.get_constraint(cons_idx)
 
-    def _sample_var_candidate(self, model, cons, candidates):
+    def _sample_var_candidate(self, model, cons, candidates, generator=None):
         features = []
         cons_features = model.cons_features[cons.id]
         for var, new_domain, shift_damage in candidates:
@@ -59,7 +61,9 @@ class LearnableRepairWalk(RepairWalk):
         scores = self._var_scoring_function(features)
         if self._sample_indices:
             probabilities = torch.softmax(scores, dim=0)
-            idx = torch.multinomial(probabilities.T, 1).item()
+            idx = torch.multinomial(probabilities.T,
+                                    1,
+                                    generator=generator).item()
         else:
             idx = torch.argmax(scores)
         var, new_domain, _ = candidates[idx]
