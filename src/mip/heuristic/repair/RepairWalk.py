@@ -128,6 +128,8 @@ class RepairWalk(RepairStrategy):
                 continue
             if should_shift:
                 shifted_domain = var.global_domain.compute_intersection(var.local_domain + shift_amount)
+                if shifted_domain == Domain.EMPTY_DOMAIN:
+                    continue
                 shift_damage = self._compute_shift_damage(var, shifted_domain, model)
                 has_plateau_move |= (shift_damage == 0)
                 shift_candidates.append((var, shifted_domain, shift_damage))
