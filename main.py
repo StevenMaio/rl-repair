@@ -3,7 +3,6 @@ import argparse
 import logging
 
 import torch
-import torch.multiprocessing as mp
 
 from src.rl.learn import FirstOrderTrainer
 from src.mip.heuristic import FixPropRepairLearn
@@ -15,8 +14,6 @@ from src.utils.config import DATA_SET_CONFIG, NUM_THREADS, FPRL_CONFIG, NUM_WORK
 
 
 def train_model(config_file):
-    mp.set_start_method('forkserver')
-
     with open(config_file) as f:
         config = json.load(f)
 

@@ -51,9 +51,7 @@ class RepairWalk(RepairStrategy):
                            params.noise_parameter,
                            params.history_size)
 
-    def repair_domain(self,
-                      model: "Model",
-                      repair_changes: List["DomainChange"]):
+    def repair_domain(self, model: "Model", repair_changes: List["DomainChange"], generator=None):
         best_violation_score: float = self._violation_scorer(model)
         best_repair_changes: List["DomainChange"] = []
         reset_changes: List["DomainChange"] = []
@@ -63,8 +61,10 @@ class RepairWalk(RepairStrategy):
         shift_history = CircularList(self._history_size)
         for iter_num in range(self._max_iterations):
             model.update()
-            cons = self._sample_violated_constraint(model)
-            var, domain_change = self._select_shift_candidate(model, cons)
+            cons = self._sample_violated_constraint(model, generator=generator)
+            var, domain_change = self._select_shift_candidate(model,
+                                                              cons,
+                                                              generator=generator)
             if var is None or domain_change in shift_history:
                 continue
             self._logger.debug('iter_num=%d cons=%s shift=%s',
@@ -101,9 +101,11 @@ class RepairWalk(RepairStrategy):
                 model.apply_domain_changes(*best_repair_changes, undo=True)
         return success
 
-    def _sample_violated_constraint(self, model: "Model") -> "Constraint":
+    def _sample_violated_constraint(self, model: "Model", generator=None) -> "Constraint":
         violated_constraints = list(filter(lambda c: c.is_violated(), model.constraints))
-        idx = torch.randint(len(violated_constraints), (1, )).item()
+        idx = torch.randint(len(violated_constraints),
+                            (1, ),
+                            generator=generator).item()
         return violated_constraints[idx]
 
     def find_shift_candidates(self,
@@ -139,17 +141,21 @@ class RepairWalk(RepairStrategy):
         else:
             return shift_candidates, False
 
-    def _select_shift_candidate(self,
-                                model: "Model",
-                                constraint: "Constraint") -> Tuple["Variable", "DomainChange"]:
+    def _select_shift_candidate(self, model: "Model", constraint: "Constraint", generator=None) -> Tuple["Variable", "DomainChange"]:
         shift_candidates, has_plateau_move = self.find_shift_candidates(model, constraint)
         if has_plateau_move:
-            var, new_domain = self._sample_var_candidate(model, constraint, shift_candidates)
+            var, new_domain = self._sample_var_candidate(model,
+                                                         constraint,
+                                                         shift_candidates,
+                                                         generator=generator)
             domain_change = DomainChange(var.id, var.local_domain, new_domain)
             return var, domain_change
         elif len(shift_candidates) > 0:
-            if torch.rand(1) <= self._noise_parameter:
-                var, new_domain = self._sample_var_candidate(model, constraint, shift_candidates)
+            if torch.rand(1, generator=generator).item() <= self._noise_parameter:
+                var, new_domain = self._sample_var_candidate(model,
+                                                             constraint,
+                                                             shift_candidates,
+                                                             generator=generator)
             else:
                 var, new_domain = self._pick_candidate_greedily(constraint,
                                                                 shift_candidates)
@@ -237,13 +243,16 @@ class RepairWalk(RepairStrategy):
         else:
             raise Exception("Sense.GE not supported")
 
-    def _sample_var_candidate(self, model, constraint, candidates):
+    def _sample_var_candidate(self, model, constraint, candidates, generator=None):
         """
 
+        :param generator:
         :param candidates:
         :return:
         """
-        idx = torch.randint(len(candidates), (1, )).item()
+        idx = torch.randint(len(candidates),
+                            (1, ),
+                            generator=generator).item()
         var, new_domain, _ = candidates[idx]
         return var, new_domain
 

@@ -35,7 +35,7 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
         self._sample_index = sample_index
         self._logger = logging.getLogger(__package__)
 
-    def select_variable(self, model: "EnhancedModel") -> "Variable":
+    def select_variable(self, model: "EnhancedModel", generator=None) -> "Variable":
         var_ids = []
         features = []
         for var in model.variables:
@@ -51,7 +51,9 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
         scores = self._scoring_function(features)
         if self._sample_index:
             probabilities = torch.softmax(scores, dim=0)
-            idx = torch.multinomial(probabilities.T, 1).item()
+            idx = torch.multinomial(probabilities.T,
+                                    1,
+                                    generator=generator).item()
             var_idx = var_ids[idx]
             p = probabilities[idx]
             self._logger.debug('VAR_SAMPLED idx=%d p=%.4f', idx, p)
@@ -76,7 +78,7 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
         self._scoring_function = scoring_function
         self._sample_index = sample_index
 
-    def select_fixing_value(self, model: "EnhancedModel", var: "Variable") -> Tuple[int, int]:
+    def select_fixing_value(self, model: "EnhancedModel", var: "Variable", generator=None) -> Tuple[int, int]:
         idx = var.id
         features = model.var_features[idx]
         score = self._scoring_function(features)
@@ -87,7 +89,7 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
         upper_bound: int = int(local_domain.upper_bound)
 
         if self._sample_index:
-            lb_first = torch.rand(1) <= p
+            lb_first = torch.rand(1, generator=generator).item() <= p
         else:
             lb_first = p < 0.5
 
@@ -140,7 +142,7 @@ class FixPropRepairLearn(FixPropRepair):
         if in_training:
             repair_strategy._action_history = self._action_history
 
-    def find_solution(self, model: EnhancedModel, solution_filename=None):
+    def find_solution(self, model: EnhancedModel, solution_filename=None, generator=None):
         """
         What is the branching strategy? Do they just move on to the next variable?
         It looks like we always move in one direction, i.e., we either fix to
@@ -152,6 +154,7 @@ class FixPropRepairLearn(FixPropRepair):
         has continuous variables, then the LP which results from the fixings
         will be solved. This requires architecture has been initialized from a gurobipy.Model
         instance. If this is not the case, then an exception will be raised.
+        :param generator:
         :param solution_filename:
         :param model:
         :return:
@@ -171,7 +174,9 @@ class FixPropRepairLearn(FixPropRepair):
             if not node.visited:
                 model.update()
                 self._reward *= self._discount_factor
-                success: bool = self._find_solution_helper_node_loop(model, node)
+                success: bool = self._find_solution_helper_node_loop(model,
+                                                                     node,
+                                                                     generator=generator)
                 if success:
                     continue_dive = False
                     continue
@@ -225,9 +230,11 @@ class FixPropRepairLearn(FixPropRepair):
 
     def _find_solution_helper_node_loop(self,
                                         model: EnhancedModel,
-                                        head: FprNode) -> bool:
+                                        head: FprNode,
+                                        generator=None) -> bool:
         """
         Helper method that contains the inner loop logic of FPR
+        :param generator:
         """
         head.visited = True
         infeasible: bool = False
@@ -252,7 +259,9 @@ class FixPropRepairLearn(FixPropRepair):
         if infeasible and self._repair:
             self._logger.debug("starting repair")
             repair_changes: list[DomainChange] = []
-            success: bool = self._repair_strategy.repair_domain(model, repair_changes)
+            success: bool = self._repair_strategy.repair_domain(model,
+                                                                repair_changes,
+                                                                generator=generator)
             self._action_history.add(success, ActionType.REPAIR_FINISHED)
             self._logger.debug("repair success=%d", success)
             self._reward *= pow(self._discount_factor, self._repair_strategy.num_moves)
@@ -263,9 +272,12 @@ class FixPropRepairLearn(FixPropRepair):
                 infeasible = False
         if infeasible and self._backtrack_on_infeasibility:
             return False
-        next_var: Variable = self._fixing_order_strategy.select_variable(model)
+        next_var: Variable = self._fixing_order_strategy.select_variable(model,
+                                                                         generator=generator)
         if next_var is not None:
-            left_val, right_val = self._value_fixing_strategy.select_fixing_value(model, next_var)
+            left_val, right_val = self._value_fixing_strategy.select_fixing_value(model,
+                                                                                  next_var,
+                                                                                  generator=generator)
             if left_val == next_var.lb:
                 self._action_history.add((next_var.id, 0), ActionType.FIXING)
             else:
