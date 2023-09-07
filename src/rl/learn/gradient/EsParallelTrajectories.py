@@ -7,6 +7,7 @@ single instance are run on the same process, but we spawn multiple processes.
 import logging
 import torch
 import itertools
+import copy
 
 import torch.multiprocessing as mp
 
@@ -27,18 +28,19 @@ def _run_trajectory(fprl, instance, noise_seed, rng_seed, noise_std_deviation):
     torch.set_num_threads(NUM_THREADS)
     generator = torch.Generator()
     with torch.no_grad():
-        policy_architecture = fprl.policy_architecture
+        policy_architecture_copy = copy.deepcopy(fprl.policy_architecture)
+        fprl.policy_architecture = policy_architecture_copy
         env = gp.Env()
         env.setParam(GRB.Param.OutputFlag, 0)
         gp_model = gp.read(instance, env)
         model = EnhancedModel.from_gurobi_model(gp_model,
-                                                gnn=policy_architecture.gnn,
+                                                gnn=policy_architecture_copy.gnn,
                                                 convert_ge_cons=True)
-        noise_generator = NoiseGenerator(policy_architecture.parameters())
+        noise_generator = NoiseGenerator(policy_architecture_copy.parameters())
         generator.manual_seed(noise_seed)
         noise = noise_generator.sample(generator=generator)
         noise.scale(noise_std_deviation)
-        noise.add_to_iterator(policy_architecture.parameters())
+        noise.add_to_iterator(policy_architecture_copy.parameters())
         generator.manual_seed(rng_seed)
         fprl.find_solution(model, generator=generator)
         return fprl.reward, noise_seed
