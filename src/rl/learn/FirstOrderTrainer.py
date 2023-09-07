@@ -94,6 +94,8 @@ class FirstOrderTrainer:
         policy_architecture = fprl.policy_architecture
         self._optimization_method.init(fprl)
         if restart:
+            self._logger.info('BEGIN_TRAINING_RNG_SEED rng_seed=%d',
+                              torch.initial_seed())
             self._optimization_method.reset()
             self._best_policy.load_state_dict(policy_architecture.state_dict())
             self._current_epoch = 0
@@ -103,9 +105,8 @@ class FirstOrderTrainer:
                 self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
             else:
                 self._init_test_score = -1
-            self._logger.info('BEGIN_TRAINING test_score=%.2f torch_seed=%d',
-                              self._init_test_score,
-                              torch.random.initial_seed())
+            self._logger.info('BEGIN_TRAINING_TEST_SCORE test_score=%.2f',
+                              self._init_test_score)
         for epoch in range(self._current_epoch, self._num_epochs):
             gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                            fprl)

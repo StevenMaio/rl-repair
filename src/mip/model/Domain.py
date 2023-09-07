@@ -23,7 +23,10 @@ class Domain:
         return copy
 
     def __eq__(self, other: "Domain"):
-        return self._lower_bound == other._lower_bound and self._upper_bound == other._upper_bound
+        if isinstance(other, Domain):
+            return self._lower_bound == other._lower_bound and self._upper_bound == other._upper_bound
+        else:
+            return False
 
     def __repr__(self) -> str:
         return f'[{self._lower_bound}, {self._upper_bound}]'
