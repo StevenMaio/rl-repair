@@ -11,14 +11,14 @@ from unittest import TestCase
 class TestSimpleGpSurrogate(TestCase):
 
     def setUp(self) -> None:
-        self.parameters = [
+        self.parameters = TensorList(iter([
             torch.Tensor([
                 [1.0, 2.0],
                 [1.0, 1.0]
             ]),
             torch.Tensor([0.5, 1.5])
-        ]
-        self.surrogate = SimpleGpSurrogate(TensorList(self.parameters),
+        ])).flatten()
+        self.surrogate = SimpleGpSurrogate(self.parameters,
                                            max_size=4)
         x1 = TensorList(iter([
             torch.Tensor([
@@ -26,22 +26,22 @@ class TestSimpleGpSurrogate(TestCase):
                 [0, 1.0]
             ]),
             torch.Tensor([3.0, -1.0])
-        ]))
+        ])).flatten()
         x2 = TensorList(iter([
             torch.Tensor([
                 [-1, 1.0],
                 [0, 0]
             ]),
             torch.Tensor([2.0, -1.0])
-        ]))
+        ])).flatten()
         x3 = TensorList(iter([
             torch.Tensor([
                 [0.0, 0],
                 [1.0, 1.0]
             ]),
             torch.Tensor([0.0, 1.0])
-        ]))
-        self.data_points = [x1, x2, x3]
+        ])).flatten()
+        self.data_points = torch.stack([x1, x2, x3])
         self.y = torch.Tensor([1, -1, 4])
         self.surrogate.init(self.data_points, self.y)
 
@@ -85,7 +85,7 @@ class TestSimpleGpSurrogate(TestCase):
                 [0.5, 1.0]
             ]),
             torch.Tensor([-1.0, -1.0])
-        ]))
+        ])).flatten()
         y4 = torch.Tensor([2.0])
 
         surrogate.add_point(x4, y4)
@@ -113,7 +113,7 @@ class TestSimpleGpSurrogate(TestCase):
                 [0.5, 1.0]
             ]),
             torch.Tensor([-1.0, -1.0])
-        ]))
+        ])).flatten()
         y4 = torch.Tensor([2.0])
         x5 = TensorList(iter([
             torch.Tensor([
@@ -121,7 +121,7 @@ class TestSimpleGpSurrogate(TestCase):
                 [0.0, 0.0]
             ]),
             torch.Tensor([0.0, 0.0])
-        ]))
+        ])).flatten()
         y5 = torch.Tensor([0.0])
 
         surrogate.add_point(x4, y4)
@@ -146,7 +146,7 @@ class TestSimpleGpSurrogate(TestCase):
                 [0.5, 1.0]
             ]),
             torch.Tensor([-1.0, -1.0])
-        ]))
+        ])).flatten()
 
         flattened_params = torch.Tensor([1.0, 2.0, 1.0, 1.0, 0.5, 1.5])
 
@@ -167,7 +167,7 @@ class TestSimpleGpSurrogate(TestCase):
         self.assertTrue(torch.isclose(pred, surrogate.predict(x4)))
         self.assertTrue(torch.isclose(var_pred, surrogate.predict_var(x4)))
         print(pred)
-        print(surrogate.mean_esimate)
+        print(surrogate.mean_estimate)
         print(surrogate.predict_var(x4))
         print(surrogate.var_estimate)
         print(r_03, r_13, r_23)

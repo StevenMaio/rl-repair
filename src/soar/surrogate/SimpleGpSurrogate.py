@@ -7,6 +7,11 @@ We note that the correlation function used in based on the exponential correlati
 function defined on p. 64 of [2]. This choice is made for consistency, as potential
 future work may involve using estimators that are based on this definition.
 
+TODO:
+    - Is it worth it to rework all of this so that it uses flattened tensors efficient?
+      I can imagine this being more efficient. At the same time, I don't think it's
+      a priority
+
 References:
     [1] L. Mathesen, G. Pedrielli, S. H. Ng, and Z. B. Zabinsky, “Stochastic optimization
     with adaptive restart: a framework for integrated local and global learning,”
@@ -16,44 +21,48 @@ References:
     New York, 2003. doi: 10.1007/978-1-4757-3799-8.
 
 """
+from .SurrogateModel import SurrogateModel
+
 import torch
+from typing import Union
 
-from src.rl.utils import TensorList
-
-from typing import List
-
-DEFAULT_SIZE_INCREMENT = 20
+DEFAULT_SIZE_INCREMENT = 5
 
 
-class SimpleGpSurrogate:
+class SimpleGpSurrogate(SurrogateModel):
+
     _mean_estimate: torch.Tensor
     _var_estimate: torch.Tensor
-    _data_points: List[TensorList]
+    _data_points: torch.Tensor
     _observations: torch.Tensor
 
     _corr_matrix: torch.Tensor
     _corr_inv: torch.Tensor
-    _corr_parameters: TensorList
+    _corr_parameters: torch.Tensor
+
+    _support: torch.Tensor
 
     # related to dynamic sizing
     _max_size: int
     _size: int
 
     def __init__(self,
-                 correlation_parameters: TensorList,
+                 correlation_parameters: torch.tensor,
+                 support: torch.Tensor,
                  max_size: int):
+        self._max_size = max_size
+        self._size = 0
+
         self._mean_estimate = torch.zeros(1)
         self._var_estimate = torch.ones(1)
-        self._data_points = []
+        self._data_points = torch.zeros((max_size, len(correlation_parameters)))
         self._observations = torch.zeros(max_size)
         self._corr_matrix = torch.zeros((max_size, max_size))
         self._corr_inv = None
         self._corr_parameters = correlation_parameters
+        self._support = support
 
-        self._max_size = max_size
-        self._size = 0
-
-    def predict(self, x):
+    def predict(self, x: torch.Tensor):
         """
         Evaluates the estimator function at x
         :param x:
@@ -79,8 +88,16 @@ class SimpleGpSurrogate:
         return var_estimate
 
     def add_point(self, x, y):
+        """
+        Adds the data point x and observed value y to the data set. The mode
+        estimator is then updated.
+        :param x:
+        :param y:
+        :return:
+        """
         if self._size == self._max_size:
             self._resize_data_tensors(self._max_size + DEFAULT_SIZE_INCREMENT)
+        self._data_points[self._size, :] = x
         self._observations[self._size] = y
 
         # update the current estimators and data
@@ -90,7 +107,6 @@ class SimpleGpSurrogate:
         self._corr_matrix[:self._size, self._size] = r
 
         self._size += 1
-        self._data_points.append(x)
 
         self._corr_inv = torch.linalg.inv(self._corr_matrix[:self._size, :self._size])
 
@@ -103,17 +119,12 @@ class SimpleGpSurrogate:
     def init(self, data_points, observations):
         if len(data_points) > self._max_size:
             self._resize_data_tensors(len(data_points) + DEFAULT_SIZE_INCREMENT)
-        for i, (x, y) in enumerate(zip(data_points, observations)):
-            for j, v in enumerate(data_points):
-                if i == j:
-                    self._corr_matrix[i, j] = 1.0
-                else:
-                    corr = self._compute_correlation(x, v)
-                    self._corr_matrix[i, j] = corr
-                    self._corr_matrix[j, i] = corr
-            self._observations[i] = y
-            self._data_points.append(x)
         self._size = len(data_points)
+        self._observations[:self._size] = observations
+        self._data_points[:self._size, :] = data_points
+        for idx, x in enumerate(data_points):
+            r = self._compute_corr_vector(x, data_points)
+            self._corr_matrix[idx, :self._size] = r
         self._corr_inv = torch.linalg.inv(self._corr_matrix[:self._size, :self._size])
 
         # compute the moment estimates
@@ -123,29 +134,19 @@ class SimpleGpSurrogate:
         mean_diff = self._observations[:self._size] - self._mean_estimate * torch.ones(self._size)
         self._var_estimate = mean_diff.T @ self._corr_inv @ mean_diff / self._size
 
-    def _compute_corr_vector(self, x):
+    def _compute_corr_vector(self,
+                             x: torch.Tensor,
+                             data_points: Union[torch.Tensor, None] = None):
         """
         Computes the vector of correlations with respect to the current data points.
         :param x:
         :return:
         """
-        r = torch.zeros(self._size)
-        for i, u in enumerate(self._data_points):
-            r[i] = self._compute_correlation(x, u)
+        if data_points is None:
+            data_points = self.data_points
+        temp = (self.data_points - x) / self._corr_parameters
+        r = torch.exp(-temp.square()).prod(dim=1)
         return r
-
-    def _compute_correlation(self, u: TensorList, v: TensorList) -> torch.Tensor:
-        """
-        Computes the correlation between parameters u and v.
-
-        :param u:
-        :param v:
-        :return:
-        """
-        correlation = torch.ones(1)
-        for t1, t2, theta in zip(u, v, self._corr_parameters):
-            correlation *= torch.exp(-((t1 - t2) / theta).square()).prod()
-        return correlation
 
     def _resize_data_tensors(self, new_size: int):
         """
@@ -158,16 +159,31 @@ class SimpleGpSurrogate:
             raise Exception("new size is less than the number of observations")
         new_obs = torch.zeros(new_size)
         new_corr_matrix = torch.zeros((new_size, new_size))
+        new_data_points = torch.zeros((new_size, len(self._corr_parameters)))
         new_obs[:self._size] = self._observations
         new_corr_matrix[:self._size, :self._size] = self._corr_matrix
+        new_data_points[:self._size, :] = self._data_points
         self._observations = new_obs
         self._corr_matrix = new_corr_matrix
         self._max_size = new_size
+        self._data_points = new_data_points
 
     @property
-    def mean_esimate(self):
+    def mean_estimate(self) -> torch.Tensor:
         return self._mean_estimate
 
     @property
-    def var_estimate(self):
+    def var_estimate(self) -> torch.Tensor:
         return self._var_estimate
+
+    @property
+    def data_points(self) -> torch.Tensor:
+        return self._data_points[:self._size]
+
+    @property
+    def observations(self) -> torch.Tensor:
+        return self._observations[:self._size]
+
+    @property
+    def support(self) -> torch.Tensor:
+        return self._support
