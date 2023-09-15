@@ -17,3 +17,7 @@ class RestartMechanism(ABC):
     @abstractmethod
     def determine_restart_point(self, surrogate_model: SurrogateModel) -> torch.Tensor:
         ...
+
+    @abstractmethod
+    def get_cost(self) -> int:
+        ...

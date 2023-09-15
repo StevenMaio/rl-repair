@@ -72,3 +72,6 @@ class SampleMaxRestart(RestartMechanism):
         best_idx = largest_distances.argmax()
         start_point = samples[best_idx].clone()
         return start_point
+
+    def get_cost(self) -> int:
+        return 1

@@ -116,7 +116,7 @@ class SOAR:
             file_handler.setFormatter(logging.Formatter(FORMAT_STR))
             self._logger.addHandler(file_handler)
 
-    def optimize(self, fprl: FixPropRepairLearn, data_set: DataSet):
+    def optimize(self, fprl: FixPropRepairLearn, data_set: DataSet, model_output: str = None):
         policy_architecture = fprl.policy_architecture
         parameters = TensorList(policy_architecture.parameters())
         self._computation_budget = self._init_computation_budget
@@ -126,11 +126,8 @@ class SOAR:
             self._logger.info('BEGIN_GENERAL_ITER remaining_budget=%d',
                               self._computation_budget)
             start_point = self._restart_mechanism.determine_restart_point(self._surrogate_model)
-            self._computation_budget -= 1
-            parameters.copy_from_1d_tensor(start_point)
-            self._termination_mechanism.init(start_point)
-            self._optimization_method.reset()
-            curr_point, obj_val = self._local_search_step(fprl, parameters, data_set)
+            self._computation_budget -= self._restart_mechanism.get_cost()
+            curr_point, obj_val = self._local_search_step(fprl, parameters, data_set, start_point)
             self._surrogate_model.add_point(curr_point, obj_val)
         best_idx = self._surrogate_model.observations.argmax(0)
         self._logger.info('END_TRAINING_BEST_PARAMS best_val_score=%.2f',
@@ -142,6 +139,8 @@ class SOAR:
         else:
             test_score = -1
         self._logger.info('END_TRAINING test_score=%.2f', test_score)
+        if model_output is not None:
+            torch.save(policy_architecture.state_dict(), model_output)
 
     def _init_and_validate_surrogate_model(self,
                                            fprl: FixPropRepairLearn,
@@ -160,8 +159,7 @@ class SOAR:
             observations = torch.zeros(num_samples)
             for i in range(num_samples):
                 parameters.copy_from_1d_tensor(initial_points[i])
-                observations[i] = -10 + 20 * torch.rand(1).item()
-                # observations[i] = self._compute_val_score(fprl, data_set)
+                observations[i] = self._compute_val_score(fprl, data_set)
             self._computation_budget -= self._num_trajectories * num_samples * len(data_set.validation_instances)
             self._surrogate_model.init(initial_points, observations)
             # TODO: do cross validation
@@ -170,9 +168,15 @@ class SOAR:
     def _local_search_step(self,
                            fprl: FixPropRepairLearn,
                            parameters: TensorList,
-                           data_set: DataSet):
+                           data_set: DataSet,
+                           start_point: torch.Tensor):
+        parameters.copy_from_1d_tensor(start_point)
+        self._termination_mechanism.init(start_point)
+        self._optimization_method.reset()
+
         continue_local_search = True
-        val_score = 0.0
+        best_val_score = 0.0
+        best_point = start_point
 
         # begin local search
         self._logger.info('BEGIN_LOCAL_SEARCH')
@@ -184,13 +188,15 @@ class SOAR:
                 self._optimization_method.step(fprl.policy_architecture,
                                                gradient_estimate)
             val_score = self._compute_val_score(fprl, data_set)
+            if val_score > best_val_score:
+                best_point = parameters.flatten()
+                best_val_score = val_score
             local_iter_cost = 150   # TODO: replace this a more refined computation
 
-            self._termination_mechanism.update(None, val_score, local_iter_cost)
+            self._termination_mechanism.update(None, best_val_score, local_iter_cost)
             self._computation_budget -= local_iter_cost
             continue_local_search = not self._termination_mechanism.should_stop()
-        curr_point = parameters.clone().flatten()
-        return curr_point, val_score
+        return best_point, best_val_score
 
     @property
     def data_points(self):
