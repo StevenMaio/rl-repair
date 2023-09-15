@@ -7,11 +7,6 @@ We note that the correlation function used in based on the exponential correlati
 function defined on p. 64 of [2]. This choice is made for consistency, as potential
 future work may involve using estimators that are based on this definition.
 
-TODO:
-    - Is it worth it to rework all of this so that it uses flattened tensors efficient?
-      I can imagine this being more efficient. At the same time, I don't think it's
-      a priority
-
 References:
     [1] L. Mathesen, G. Pedrielli, S. H. Ng, and Z. B. Zabinsky, “Stochastic optimization
     with adaptive restart: a framework for integrated local and global learning,”

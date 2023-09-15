@@ -69,8 +69,8 @@ def train_model(config_file):
                 experimental_design,
                 10,
                 0,
-                1,
-                None,
+                10,
+                'soar-test-log.txt',
                 True)
     soar.optimize(fprl, data_set)
 

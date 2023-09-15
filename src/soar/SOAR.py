@@ -133,7 +133,15 @@ class SOAR:
             curr_point, obj_val = self._local_search_step(fprl, parameters, data_set)
             self._surrogate_model.add_point(curr_point, obj_val)
         best_idx = self._surrogate_model.observations.argmax(0)
-        return self._surrogate_model.data_points[best_idx]
+        self._logger.info('END_TRAINING_BEST_PARAMS best_val_score=%.2f',
+                          self._surrogate_model.observations[best_idx])
+        best_point = self._surrogate_model.data_points[best_idx]
+        parameters.copy_from_1d_tensor(best_point)
+        if len(data_set.testing_instances) > 0:
+            test_score = self._evaluate_instances(fprl, data_set.testing_instances)
+        else:
+            test_score = -1
+        self._logger.info('END_TRAINING test_score=%.2f', test_score)
 
     def _init_and_validate_surrogate_model(self,
                                            fprl: FixPropRepairLearn,
