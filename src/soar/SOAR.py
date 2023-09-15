@@ -160,7 +160,8 @@ class SOAR:
             observations = torch.zeros(num_samples)
             for i in range(num_samples):
                 parameters.copy_from_1d_tensor(initial_points[i])
-                observations[i] = self._compute_val_score(fprl, data_set)
+                observations[i] = -10 + 20 * torch.rand(1).item()
+                # observations[i] = self._compute_val_score(fprl, data_set)
             self._computation_budget -= self._num_trajectories * num_samples * len(data_set.validation_instances)
             self._surrogate_model.init(initial_points, observations)
             # TODO: do cross validation
@@ -174,8 +175,9 @@ class SOAR:
         val_score = 0.0
 
         # begin local search
-        while continue_local_search:
-            self._logger.info('BEGIN_LOCAL_SEARCH')
+        self._logger.info('BEGIN_LOCAL_SEARCH')
+        while continue_local_search and self._computation_budget > 0:
+            self._logger.info('LOCAL_SEARCH_INNER_LOOP remaining_budget=%d', self._computation_budget)
             for _ in range(self._training_epochs_before_val):
                 gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                                fprl)
@@ -186,7 +188,7 @@ class SOAR:
 
             self._termination_mechanism.update(None, val_score, local_iter_cost)
             self._computation_budget -= local_iter_cost
-            continue_local_search = (self._computation_budget < 0) or self._termination_mechanism.should_stop()
+            continue_local_search = not self._termination_mechanism.should_stop()
         curr_point = parameters.clone().flatten()
         return curr_point, val_score
 
