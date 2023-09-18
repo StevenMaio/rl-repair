@@ -30,6 +30,10 @@ class SurrogateModel(ABC):
     def predict_var(self, x: torch.Tensor) -> torch.Tensor:
         ...
 
+    @abstractmethod
+    def reset(self):
+        ...
+
     @property
     @abstractmethod
     def support(self):

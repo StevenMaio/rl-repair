@@ -3,8 +3,8 @@ import itertools
 import torch
 import torch.multiprocessing as mp
 
-from src.utils.config import NUM_THREADS, PARAMS, GRADIENT_ESTIMATOR_CONFIG, OPTIMIZATION_METHOD_CONFIG, \
-    VAL_PROGRESS_CHECKER_CONFIG
+from src.utils.config import NUM_THREADS, PARAMS, GRADIENT_ESTIMATOR, OPTIMIZATION_METHOD, \
+    VAL_PROGRESS_CHECKER
 from src.rl.learn.gradient import gradient_estimator_from_config, GradientEstimator
 from src.rl.learn.optim import FirstOrderMethod, optimizer_fom_config
 from src.rl.learn.val import progress_checker_from_config
@@ -188,10 +188,10 @@ class FirstOrderTrainer:
     @staticmethod
     def from_config(config: dict):
         params = config[PARAMS]
-        gradient_estimator = gradient_estimator_from_config(config[GRADIENT_ESTIMATOR_CONFIG])
-        optimization_method = optimizer_fom_config(config[OPTIMIZATION_METHOD_CONFIG])
+        gradient_estimator = gradient_estimator_from_config(config[GRADIENT_ESTIMATOR])
+        optimization_method = optimizer_fom_config(config[OPTIMIZATION_METHOD])
         # TODO: create the validation progress checker
-        val_progress_checker = progress_checker_from_config(config[VAL_PROGRESS_CHECKER_CONFIG])
+        val_progress_checker = progress_checker_from_config(config[VAL_PROGRESS_CHECKER])
 
         return FirstOrderTrainer(optimization_method=optimization_method,
                                  gradient_estimator=gradient_estimator,

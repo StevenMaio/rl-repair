@@ -13,19 +13,19 @@ References:
 """
 from typing import List
 
-from src.soar.restart import RestartMechanism
-from src.soar.sampling import ExperimentalDesign
-from src.soar.surrogate import SurrogateModel
-from src.soar.termination import TerminationMechanism
+from src.soar.restart import RestartMechanism, restart_mechanism_from_config
+from src.soar.sampling import ExperimentalDesign, experimental_design_from_config
+from src.soar.surrogate import SurrogateModel, surrogate_from_config
+from src.soar.termination import TerminationMechanism, termination_mechanism_from_config
 
 from src.mip.heuristic import FixPropRepairLearn
 
 from src.rl.mip import EnhancedModel
 from src.rl.utils import DataSet, TensorList
-from src.rl.learn.optim import FirstOrderMethod
-from src.rl.learn.gradient import GradientEstimator
+from src.rl.learn.optim import FirstOrderMethod, optimizer_fom_config
+from src.rl.learn.gradient import GradientEstimator, gradient_estimator_from_config
 from src.utils import get_global_pool, FORMAT_STR
-from src.utils.config import NUM_THREADS
+from src.utils.config import *
 
 import logging
 import torch
@@ -191,7 +191,7 @@ class SOAR:
             if val_score > best_val_score:
                 best_point = parameters.flatten()
                 best_val_score = val_score
-            local_iter_cost = 150   # TODO: replace this a more refined computation
+            local_iter_cost = 150  # TODO: replace this a more refined computation
 
             self._termination_mechanism.update(None, best_val_score, local_iter_cost)
             self._computation_budget -= local_iter_cost
@@ -257,3 +257,39 @@ class SOAR:
                 if trajectory_num < self._num_trajectories - 1:
                     model.reset()
         return num_successes / batch_size
+
+    @staticmethod
+    def from_config(config: dict):
+        params = config[PARAMS]
+        gradient_estimator = gradient_estimator_from_config(config[GRADIENT_ESTIMATOR])
+        optimization_method = optimizer_fom_config(config[OPTIMIZATION_METHOD])
+
+        support = torch.load(config[SUPPORT])
+        corr_parameters = torch.load(config[CORRELATION_PARAMETERS])
+
+        surrogate_config = config[SURROGATE_MODEL]
+        surrogate_config[PARAMS].update({
+            SUPPORT: support,
+            CORRELATION_PARAMETERS: corr_parameters
+        })
+        surrogate_model = surrogate_from_config(surrogate_config)
+
+        restart_mechanism = restart_mechanism_from_config(config[RESTART_MECHANISM])
+        termination_mechanism = termination_mechanism_from_config(config[TERMINATION_MECHANISM])
+
+        experimental_design_config = config[EXPERIMENTAL_DESIGN]
+        experimental_design_config[PARAMS].update({
+            SUPPORT: support
+        })
+        experimental_design = experimental_design_from_config(experimental_design_config)
+
+        params.update({
+            LOCAL_SEARCH_METHOD: optimization_method,
+            GRADIENT_ESTIMATOR: gradient_estimator,
+            SURROGATE_MODEL: surrogate_model,
+            RESTART_MECHANISM: restart_mechanism,
+            TERMINATION_MECHANISM: termination_mechanism,
+            EXPERIMENTAL_DESIGN: experimental_design
+        })
+        soar = SOAR(**params)
+        return soar

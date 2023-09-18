@@ -155,9 +155,10 @@ class SimpleGpSurrogate(SurrogateModel):
         new_obs = torch.zeros(new_size)
         new_corr_matrix = torch.zeros((new_size, new_size))
         new_data_points = torch.zeros((new_size, len(self._corr_parameters)))
-        new_obs[:self._size] = self._observations
-        new_corr_matrix[:self._size, :self._size] = self._corr_matrix
-        new_data_points[:self._size, :] = self._data_points
+        if self._size > 0:
+            new_obs[:self._size] = self._observations
+            new_corr_matrix[:self._size, :self._size] = self._corr_matrix
+            new_data_points[:self._size, :] = self._data_points
         self._observations = new_obs
         self._corr_matrix = new_corr_matrix
         self._max_size = new_size
@@ -182,3 +183,12 @@ class SimpleGpSurrogate(SurrogateModel):
     @property
     def support(self) -> torch.Tensor:
         return self._support
+
+    def reset(self):
+        self._size = 0
+        self._mean_estimate.zero_()
+        self._var_estimate.zero_()
+        self._data_points.zero_()
+        self._corr_matrix.zero_()
+        self._observations.zero_()
+        self._corr_inv = None

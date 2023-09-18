@@ -25,10 +25,10 @@ class SampleMaxRestart(RestartMechanism):
     def __init__(self,
                  best_ei_threshold: float,
                  num_restart_samples: int,
-                 noise_paramter: float = 0.0):
+                 noise_parameter: float = 0.0):
         self._best_ei_threshold = best_ei_threshold
         self._num_restart_samples = num_restart_samples
-        self._noise_parameter = noise_paramter
+        self._noise_parameter = noise_parameter
         self._std_normal_distr = torch.distributions.Normal(0.0, 1.0)
 
     def determine_restart_point(self, surrogate_model: SurrogateModel) -> torch.Tensor:
