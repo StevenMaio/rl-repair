@@ -17,8 +17,6 @@ from src.utils.config import DATA_SET_CONFIG, NUM_THREADS, FPRL_CONFIG, NUM_WORK
 
 
 def train_model_from_config(config_file):
-    mp.set_start_method('forkserver')
-
     with open(config_file) as f:
         config = json.load(f)
 
