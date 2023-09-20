@@ -24,7 +24,8 @@ from src.rl.mip import EnhancedModel
 from src.rl.utils import DataSet, TensorList
 from src.rl.learn.optim import FirstOrderMethod, optimizer_fom_config
 from src.rl.learn.gradient import GradientEstimator, gradient_estimator_from_config
-from src.utils import get_global_pool, FORMAT_STR
+from src.rl.learn.trainer import Trainer
+from src.utils import get_global_pool, FORMAT_STR, create_rng_seeds
 from src.utils.config import *
 
 import logging
@@ -37,8 +38,10 @@ from gurobipy import GRB
 DEFAULT_DATA_POINT_INCREMENT = 5  # see [1] for description
 
 
-def _eval_trajectory(fprl, instance):
+def _eval_trajectory(fprl, instance, rng_seed):
     torch.set_num_threads(NUM_THREADS)
+    generator = torch.Generator()
+    generator.manual_seed(rng_seed)
     with torch.no_grad():
         policy_architecture = fprl.policy_architecture
         env = gp.Env()
@@ -47,11 +50,11 @@ def _eval_trajectory(fprl, instance):
         model = EnhancedModel.from_gurobi_model(gp_model,
                                                 gnn=policy_architecture.gnn,
                                                 convert_ge_cons=True)
-        fprl.find_solution(model)
+        fprl.find_solution(model, generator=generator)
         return fprl.reward
 
 
-class SOAR:
+class SOAR(Trainer):
     _logger: logging.getLogger(__package__)
 
     # local search components
@@ -116,7 +119,10 @@ class SOAR:
             file_handler.setFormatter(logging.Formatter(FORMAT_STR))
             self._logger.addHandler(file_handler)
 
-    def optimize(self, fprl: FixPropRepairLearn, data_set: DataSet, model_output: str = None):
+    def train(self,
+              fprl: FixPropRepairLearn,
+              data_set: DataSet,
+              model_output: str = None):
         policy_architecture = fprl.policy_architecture
         parameters = TensorList(policy_architecture.parameters())
         self._computation_budget = self._init_computation_budget
@@ -226,12 +232,14 @@ class SOAR:
 
     def _evaluate_instances_parallel(self, fprl, instances):
         batch_size = len(instances) * self._num_trajectories
-        multi_instances = [itertools.repeat(i, self._num_trajectories) for i in instances]
-        multi_instances = itertools.chain(*multi_instances)
+        pool_inputs = [itertools.repeat(i, self._num_trajectories) for i in instances]
+        pool_inputs = zip(itertools.chain(*pool_inputs),
+                          map(lambda t: t.item(), create_rng_seeds(batch_size)))
         results = self._worker_pool.starmap(_eval_trajectory,
-                                            map(lambda i: (fprl,
-                                                           i),
-                                                multi_instances)
+                                            map(lambda t: (fprl,
+                                                           t[0],
+                                                           t[1]),
+                                                pool_inputs)
                                             )
         num_successes = 0
         for r in results:
