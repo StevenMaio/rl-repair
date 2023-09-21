@@ -26,10 +26,17 @@ class RandomFixingOrder(FixingOrderStrategy):
 
     def init(self, model, generator=None):
         self._indices.clear()
+        binary_indices = []
+        integer_indices = []
         for var in model.variables:
-            if var.type == VarType.BINARY or var.type == VarType.INTEGER:
-                self._indices.append(var.id)
-        # permutate the matrix
-        permutation = torch.randperm(len(self._indices))
-        permutated_indices = [self._indices[idx] for idx in permutation]
-        self._indices = permutated_indices
+            if var.type == VarType.BINARY:
+                binary_indices.append(var.id)
+            if var.type == VarType.INTEGER:
+                integer_indices.append(var.id)
+        permutation = torch.randperm(len(binary_indices))
+        permutated_binary_indices = [binary_indices[idx] for idx in permutation]
+        self._indices.extend(permutated_binary_indices)
+
+        permutation = torch.randperm(len(integer_indices))
+        permutated_integer_indices = [integer_indices[idx] for idx in permutation]
+        self._indices.extend(permutated_integer_indices)
