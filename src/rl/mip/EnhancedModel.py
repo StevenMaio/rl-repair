@@ -43,8 +43,9 @@ class EnhancedModel(Model):
         Update the current node representations and compute a graph convolution.
         :return:
         """
-        self._instance_graph.update(self)
-        self._var_features, self._cons_features = self._gnn(self._instance_graph)
+        if self.gnn is not None:
+            self._instance_graph.update(self)
+            self._var_features, self._cons_features = self._gnn(self._instance_graph)
 
     @property
     def gnn(self) -> GraphNeuralNetwork:

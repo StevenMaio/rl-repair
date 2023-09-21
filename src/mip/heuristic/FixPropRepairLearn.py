@@ -15,12 +15,13 @@ from src.mip.heuristic import FixPropRepair
 from src.utils.config import POLICY_ARCHITECTURE_CONFIG, REPAIR_STRAT_CONFIG, PARAMS
 
 from .FprNode import FprNode
-from .FixingOrderStrategy import FixingOrderStrategy
-from .ValueFixingStrategy import ValueFixingStrategy
+from src.mip.heuristic.fixing.FixingOrderStrategy import FixingOrderStrategy
+from src.mip.heuristic.value.ValueFixingStrategy import ValueFixingStrategy
 from ..model import Variable, Column, DomainChange, Constraint
 
 
 class _FprlFixingOrderStrategy(FixingOrderStrategy):
+
     name: str = 'FprlFixingOrderStrategy'
 
     _scoring_function: MultilayerPerceptron
@@ -62,8 +63,8 @@ class _FprlFixingOrderStrategy(FixingOrderStrategy):
             var_idx = var_ids[idx]
         return model.get_var(var_idx)
 
-    def backtrack(self, model: "EnhancedModel"):
-        pass  # do nothing
+    def init(self, model, generator=None):
+        ...
 
 
 class _FprlValueSelectionStrategy(ValueFixingStrategy):
@@ -98,6 +99,9 @@ class _FprlValueSelectionStrategy(ValueFixingStrategy):
         else:
             left_value, right_value = upper_bound, lower_bound
         return left_value, right_value
+
+    def init(self, model, generator=None):
+        ...
 
 
 class FixPropRepairLearn(FixPropRepair):

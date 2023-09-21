@@ -31,3 +31,7 @@ class RepairStrategy(ABC):
                               model: "Model",
                               constraint: "Constraint") -> Tuple[List[Tuple[Any, Any, float]], bool]:
         ...
+
+    @abstractmethod
+    def init(self, model: "Model"):
+        ...
