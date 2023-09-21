@@ -14,5 +14,7 @@ def repair_strategy_from_config(config,
                                    cons_scoring_function,
                                    var_scoring_function,
                                    sample_indices)
+    elif name == 'RepairWalk':
+        return RepairWalk(RepairWalkParams())
     else:
         raise NotImplementedError(f'repair strategy {name} not implemented')

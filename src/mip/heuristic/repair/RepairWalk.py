@@ -306,3 +306,8 @@ class RepairWalk(RepairStrategy):
     @property
     def num_moves(self) -> int:
         return self._num_moves
+
+    def init(self, model: "Model"):
+        ...
+
+

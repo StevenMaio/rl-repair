@@ -1,13 +1,15 @@
 from unittest import TestCase
 
+from src.mip.heuristic.fixing import RandomFixingOrder, LeftRightOrder
+from src.mip.heuristic.value.RandomValueFixing import RandomValueFixing
+from src.mip.heuristic.value.UpperBoundFirst import UpperBoundFirst
 from src.mip.params import RepairWalkParams
 from src.mip.heuristic import FixPropRepair
 from src.mip.model import *
 from src.mip.propagation import LinearConstraintPropagator
 from src.mip.heuristic.repair.RepairStrategy import RepairStrategy
 from src.mip.heuristic.repair.RepairWalk import RepairWalk
-from src.mip.heuristic.FixingOrderStrategy import *
-from src.mip.heuristic.ValueFixingStrategy import *
+from src.mip.heuristic.fixing.FixingOrderStrategy import *
 
 import torch
 

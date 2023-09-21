@@ -1,7 +1,5 @@
 from src.rl.learn.optim.FirstOrderMethod import FirstOrderMethod
 
-from .FirstOrderTrainer import FirstOrderTrainer
-
 # First order optimization methods
 
 # Gradient estimators

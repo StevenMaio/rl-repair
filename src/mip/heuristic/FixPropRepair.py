@@ -3,12 +3,17 @@ import logging
 import gurobipy
 from gurobipy import GRB
 
-from .FixingOrderStrategy import FixingOrderStrategy
-from .ValueFixingStrategy import ValueFixingStrategy
-from src.mip.heuristic.repair import RepairStrategy
+from src.mip.heuristic.fixing import FixingOrderStrategy, fixing_order_strategy_from_config
+from src.mip.heuristic.value import ValueFixingStrategy, value_fixing_strategy_from_config
+from src.mip.heuristic.repair import RepairStrategy, repair_strategy_from_config
 from src.mip.model import DomainChange, Model, Variable, Column, Constraint
-from src.mip.propagation import Propagator
+from src.mip.propagation import Propagator, LinearConstraintPropagator
+
+from src.utils.config import FIXING_ORDER_STRATEGY, VALUE_FIXING_STRATEGY, REPAIR_STRAT_CONFIG, PARAMS
 from .FprNode import FprNode
+
+DEFAULT_PROPAGATOR = LinearConstraintPropagator()
+
 
 class FixPropRepair:
     _discount_factor: float
@@ -33,7 +38,7 @@ class FixPropRepair:
                  fixing_order_strategy: FixingOrderStrategy,
                  value_fixing_strategy: ValueFixingStrategy,
                  repair_strategy: RepairStrategy,
-                 propagator: Propagator,
+                 propagator: Propagator = DEFAULT_PROPAGATOR,
                  discount_factor: float = 0.99,
                  max_absolute_value: float = float('inf'),
                  propagate_fixings: bool = True,
@@ -143,6 +148,9 @@ class FixPropRepair:
         num_backtracks: int = 0
         self._reward = 1 / self._discount_factor
 
+        self._fixing_order_strategy.init(model)
+        self._value_fixing_strategy.init(model)
+
         while len(search_stack) > 0 and continue_dive:
             node: FprNode = search_stack[-1]
             if not node.visited:
@@ -167,7 +175,6 @@ class FixPropRepair:
                                            node.depth)
                         if num_backtracks < self._max_backtracks:
                             model.apply_domain_changes(*node.domain_changes, undo=True)
-                            self._fixing_order_strategy.backtrack(model)
                             num_backtracks += 1
                         else:
                             success = False
@@ -216,3 +223,19 @@ class FixPropRepair:
     @property
     def repair_strategy(self) -> RepairStrategy:
         return self._repair_strategy
+
+    @staticmethod
+    def from_config(config: dict):
+        fixing_order_strategy = fixing_order_strategy_from_config(config[FIXING_ORDER_STRATEGY])
+        value_fixing_strategy = value_fixing_strategy_from_config(config[VALUE_FIXING_STRATEGY])
+        repair_strat = repair_strategy_from_config(config[REPAIR_STRAT_CONFIG])
+
+        params = config[PARAMS]
+        params.update({
+            'fixing_order_strategy': fixing_order_strategy,
+            'value_fixing_strategy': value_fixing_strategy,
+            'repair_strategy': repair_strat
+        })
+
+        fpr = FixPropRepair(**params)
+        return fpr

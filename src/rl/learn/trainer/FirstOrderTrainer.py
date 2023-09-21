@@ -15,10 +15,10 @@ from src.rl.utils import DataSet
 
 import logging
 
-from .val import ValidationProgressChecker
-from ..architecture import PolicyArchitecture
-from ..mip import EnhancedModel
-from ..params import GnnParams
+from src.rl.learn.val import ValidationProgressChecker
+from src.rl.architecture import PolicyArchitecture
+from src.rl.mip import EnhancedModel
+from src.rl.params import GnnParams
 
 import gurobipy as gp
 from gurobipy import GRB
@@ -90,25 +90,22 @@ class FirstOrderTrainer:
     def train(self,
               fprl: FixPropRepairLearn,
               data_set: DataSet,
-              model_output: str = None,
-              restart: bool = True,
-              trainer_data: str = None):
+              model_output: str = None):
         policy_architecture = fprl.policy_architecture
         self._optimization_method.init(fprl)
-        if restart:
-            self._logger.info('BEGIN_TRAINING_RNG_SEED rng_seed=%d',
-                              torch.initial_seed())
-            self._optimization_method.reset()
-            self._best_policy.load_state_dict(policy_architecture.state_dict())
-            self._current_epoch = 0
-            self._best_val_score = 0
-            self._val_progress_checker.reset()
-            if len(data_set.testing_instances) > 0:
-                self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
-            else:
-                self._init_test_score = -1
-            self._logger.info('BEGIN_TRAINING_TEST_SCORE test_score=%.2f',
-                              self._init_test_score)
+        self._logger.info('BEGIN_TRAINING_RNG_SEED rng_seed=%d',
+                          torch.initial_seed())
+        self._optimization_method.reset()
+        self._best_policy.load_state_dict(policy_architecture.state_dict())
+        self._current_epoch = 0
+        self._best_val_score = 0
+        self._val_progress_checker.reset()
+        if len(data_set.testing_instances) > 0:
+            self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
+        else:
+            self._init_test_score = -1
+        self._logger.info('BEGIN_TRAINING_TEST_SCORE test_score=%.2f',
+                          self._init_test_score)
         for epoch in range(self._current_epoch, self._num_epochs):
             gradient_estimate = self._gradient_estimator.estimate_gradient(data_set.training_instances,
                                                                            fprl)
@@ -116,7 +113,7 @@ class FirstOrderTrainer:
                                            gradient_estimate)
             self._logger.info('END_OF_EPOCH epoch=%d best_val=%.2f', epoch, self._best_val_score)
             if (epoch + 1) % self._iters_to_progress_check == 0:
-                self._check_progress(fprl, data_set, model_output, trainer_data)
+                self._check_progress(fprl, data_set, model_output)
         # load best policy architecture
         policy_architecture.load_state_dict(self._best_policy.state_dict())
         if model_output is not None:
@@ -127,7 +124,7 @@ class FirstOrderTrainer:
             test_score = -1
         self._logger.info('END_TRAINING test_score=%.2f', test_score)
 
-    def _check_progress(self, fprl, data_set, model_output, trainer_data):
+    def _check_progress(self, fprl, data_set, model_output):
         policy_architecture = fprl.policy_architecture
         if len(data_set.validation_instances) > 0:
             raw_val_score = self._evaluate_instances(fprl, data_set.validation_instances)
