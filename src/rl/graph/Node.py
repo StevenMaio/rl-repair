@@ -19,9 +19,13 @@ class VarFeatIdx(IndexEnum):
     IS_INTEGER = auto()
     IS_CONTINUOUS = auto()
     LOCAL_DOMAIN_SIZE = auto()
+    LOCAL_LOWER_BOUND = auto()
+    LOCAL_UPPER_BOUND = auto()
     IS_FIXED = auto()
     APPEARANCE_SCORE = auto()
     OBJECTIVE_COEF = auto()
+    PORTION_UP_LOCKS = auto()
+    PORTION_DOWN_LOCKS = auto()
 
 
 class ConsFeatIdx(IndexEnum):
@@ -80,7 +84,11 @@ class Node:
                 self._features[VarFeatIdx.IS_CONTINUOUS] = 1.0
             self._features[VarFeatIdx.OBJECTIVE_COEF] = var.objective_coefficient
             self._features[VarFeatIdx.APPEARANCE_SCORE] = var.column.size / len(model.constraints)
+            self._features[VarFeatIdx.PORTION_UP_LOCKS] = var.num_up_locks / var.column.size
+            self._features[VarFeatIdx.PORTION_DOWN_LOCKS] = var.num_down_locks / var.column.size
         self._features[VarFeatIdx.LOCAL_DOMAIN_SIZE] = var.local_domain.size() / var.global_domain.size()
+        self._features[VarFeatIdx.LOCAL_UPPER_BOUND] = var.ub
+        self._features[VarFeatIdx.LOCAL_LOWER_BOUND] = var.lb
         self._features[VarFeatIdx.IS_FIXED] = 1 if var.lb == var.ub else 0
 
     def _update_cons_node(self, model, initialize):

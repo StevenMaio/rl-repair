@@ -145,6 +145,7 @@ class Constraint:
                 max_activity += var.lb * coefficient
         self.min_activity = min_activity
         self.max_activity = max_activity
+        self._propagated = False
 
     def __repr__(self) -> str:
         return f'Constraint(id={self._constraint_id}, rhs={self._rhs}, ' \

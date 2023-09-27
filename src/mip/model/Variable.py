@@ -42,6 +42,9 @@ class Variable:
     _objective_coefficient: float
     # TODO: the features which depend on the LP relaxation
 
+    _num_up_locks: int
+    _num_down_locks: int
+
     def __init__(self,
                  var_id: int,
                  variable_type: VarType,
@@ -53,6 +56,8 @@ class Variable:
         self._column = Column(self)
         self._positive_objective_coefficient = 0
         self._objective_coefficient = 0
+        self._num_up_locks = 0
+        self._num_down_locks = 0
 
     @property
     def column(self) -> Column:
@@ -93,6 +98,22 @@ class Variable:
     @objective_coefficient.setter
     def objective_coefficient(self, new_value: float):
         self._objective_coefficient = new_value
+
+    @property
+    def num_up_locks(self):
+        return self._num_up_locks
+
+    @num_up_locks.setter
+    def num_up_locks(self, new_value: int):
+        self._num_up_locks = new_value
+
+    @property
+    def num_down_locks(self):
+        return self._num_down_locks
+
+    @num_down_locks.setter
+    def num_down_locks(self, new_value: int):
+        self._num_down_locks = new_value
 
     def get_gurobi_var(self) -> gurobipy.Var:
         return self._gp_var

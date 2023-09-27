@@ -73,6 +73,7 @@ class FixPropRepair:
         infeasible: bool = False
         if head.depth > 0:
             model.apply_domain_changes(*head.domain_changes)
+            model.update()
             infeasible = model.violated
             if not infeasible and self._propagate_fixings:
                 var_id: int = head.fixed_var_id

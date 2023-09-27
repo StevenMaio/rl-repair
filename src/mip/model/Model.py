@@ -277,9 +277,11 @@ class Model:
                 if coefficient > 0:
                     min_activity += var.lb * coefficient
                     max_activity += var.ub * coefficient
+                    var.num_up_locks += 1
                 else:
                     min_activity += var.ub * coefficient
                     max_activity += var.lb * coefficient
+                    var.num_down_locks += 1
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
             violated |= constraint.is_violated()
@@ -351,9 +353,11 @@ class Model:
                 if coefficient > 0:
                     min_activity += coefficient * var.lb
                     max_activity += coefficient * var.ub
+                    var.num_up_locks += 1
                 else:
                     min_activity += coefficient * var.ub
                     max_activity += coefficient * var.lb
+                    var.num_down_locks += 1
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
             violated |= constraint.is_violated()

@@ -43,6 +43,7 @@ class EnhancedModel(Model):
         Update the current node representations and compute a graph convolution.
         :return:
         """
+        super().update()
         if self.gnn is not None:
             self._instance_graph.update(self)
             self._var_features, self._cons_features = self._gnn(self._instance_graph)
@@ -130,9 +131,11 @@ class EnhancedModel(Model):
                 if coefficient > 0:
                     min_activity += coefficient * var.lb
                     max_activity += coefficient * var.ub
+                    var.num_up_locks += 1
                 else:
                     min_activity += coefficient * var.ub
                     max_activity += coefficient * var.lb
+                    var.num_down_locks += 1
             constraint.min_activity = min_activity
             constraint.max_activity = max_activity
             violated |= constraint.is_violated()
