@@ -3,10 +3,12 @@ from src.utils.config import PARAMS
 from .FixingOrderStrategy import FixingOrderStrategy
 from .LeftRightOrder import LeftRightOrder
 from .RandomFixingOrder import RandomFixingOrder
+from .TypeFixingOrder import TypeFixingOrder
 
 fixing_order_strategies = {
     'RandomFixingOrder': RandomFixingOrder,
-    'LeftRightOrder': LeftRightOrder
+    'LeftRightOrder': LeftRightOrder,
+    'TypeFixingOrder': TypeFixingOrder
 }
 
 
