@@ -203,7 +203,6 @@ class FixPropRepairLearn(FixPropRepair):
                         else:
                             success = False
                             break
-                        self._fixing_order_strategy.backtrack(model)
                     search_stack.pop()
         if success:
             success = self.determine_feasibility(model)
