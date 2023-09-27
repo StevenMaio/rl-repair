@@ -6,7 +6,7 @@ from .UpperBoundFirst import UpperBoundFirst
 from .GoodOjbective import GoodObjective
 from .BadObjective import BadObjective
 from .LpFixingStrategy import LpFixingStrategy
-from .SmallestViolationStrategy import SmallestViolationStrategy
+from .LeastLocksStrategy import LeastLocksStrategy
 
 value_fixing_strategies = {
     'RandomValueFixing': RandomValueFixing,
@@ -14,7 +14,7 @@ value_fixing_strategies = {
     'GoodOjbective': GoodObjective,
     'BadObjective': BadObjective,
     'LpFixingStrategy': LpFixingStrategy,
-    'SmallestViolationStrategy': SmallestViolationStrategy
+    'SmallestViolationStrategy': LeastLocksStrategy
 }
 
 
