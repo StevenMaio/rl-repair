@@ -157,7 +157,7 @@ class TestSimpleGpSurrogate(TestCase):
         pred = (surrogate._mean_estimate + torch.Tensor([r_03, r_13, r_23]).T @ surrogate._corr_inv @
                 (surrogate._observations[:3] - surrogate._mean_estimate * torch.ones(3)))
 
-        r = surrogate._compute_corr_vector(x4)
+        r = surrogate.compute_corr_vector(x4)
         ones = torch.ones(3)
         temp = (1 - ones.T @ surrogate._corr_inv @ r).square()
         temp /= ones.T @ surrogate._corr_inv @ ones.T

@@ -99,6 +99,7 @@ def train_main(args):
 
 
 if __name__ == '__main__':
+    torch.set_default_dtype(torch.float64)
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='command',
                                        help='command for the solver',
