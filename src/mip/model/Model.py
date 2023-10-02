@@ -9,8 +9,7 @@ Author: Steven Maio
 """
 import logging
 import gurobipy
-
-from enum import Enum, auto
+from gurobipy import GRB
 
 from .Objective import Objective, ObjSense
 from .Variable import VarType, Variable
@@ -36,6 +35,7 @@ class Model:
     _objective: Objective
     _initialized: bool
     _violated: bool
+    _lp_solved: bool
 
     def __init__(self):
         self._num_variables = 0
@@ -48,6 +48,7 @@ class Model:
         self._objective = None
         self._initialized = False
         self._violated = True
+        self._lp_solved = False
 
     def add_var(self,
                 variable_type: VarType = VarType.INTEGER,
@@ -380,6 +381,17 @@ class Model:
         for constraint in self._constraints:
             constraint.reset(self)
             self._violated |= constraint.is_violated()
+
+    def solve_relaxation(self):
+        if not self._lp_solved:
+            relaxation: gurobipy.Model = self._gp_model.relax()
+            relaxation.optimize()
+            if relaxation.Status == GRB.OPTIMAL:
+                self._lp_solved = True
+                for idx, gp_var in enumerate(relaxation.getVars()):
+                    self._variables[idx].relaxation_value = gp_var.X
+            else:
+                raise Exception("Error solving relaxation")
 
     def update(self):
         # this does nothing in the base class
