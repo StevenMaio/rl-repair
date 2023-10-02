@@ -26,8 +26,6 @@ DEFAULT_SIZE_INCREMENT = 5
 
 class SimpleGpSurrogate(SurrogateModel):
 
-    _num_dimensions: int
-
     _mean_estimate: torch.Tensor
     _var_estimate: torch.Tensor
     _data_points: torch.Tensor
@@ -58,7 +56,6 @@ class SimpleGpSurrogate(SurrogateModel):
         self._corr_inv = None
         self._corr_parameters = correlation_parameters
         self._support = support
-        self._num_dimensions = len(correlation_parameters)
 
     def predict(self, x: torch.Tensor):
         """
@@ -66,18 +63,18 @@ class SimpleGpSurrogate(SurrogateModel):
         :param x:
         :return:
         """
-        r = self.compute_corr_vector(x)
+        r = self._compute_corr_vector(x)
         estimate = (self._mean_estimate +
                     r.T @ self._corr_inv @ (self._observations[:self._size] - self._mean_estimate))
         return estimate
 
-    def predict_var(self, x: torch.Tensor):
+    def predict_var(self, x):
         """
         Evaluates the estimator function at x
         :param x:
         :return:
         """
-        r = self.compute_corr_vector(x)
+        r = self._compute_corr_vector(x)
         ones = torch.ones(self._size)
         temp = (1 - ones.T @ self._corr_inv @ r).square()
         temp /= ones.T @ self._corr_inv @ ones
@@ -99,7 +96,7 @@ class SimpleGpSurrogate(SurrogateModel):
         self._observations[self._size] = y
 
         # update the current estimators and data
-        r = self.compute_corr_vector(x)
+        r = self._compute_corr_vector(x)
         self._corr_matrix[self._size, self._size] = 1.0
         self._corr_matrix[self._size, :self._size] = r
         self._corr_matrix[:self._size, self._size] = r
@@ -121,7 +118,7 @@ class SimpleGpSurrogate(SurrogateModel):
         self._observations[:self._size] = observations
         self._data_points[:self._size, :] = data_points
         for idx, x in enumerate(data_points):
-            r = self.compute_corr_vector(x, data_points)
+            r = self._compute_corr_vector(x, data_points)
             self._corr_matrix[idx, :self._size] = r
         self._corr_inv = torch.linalg.inv(self._corr_matrix[:self._size, :self._size])
 
@@ -132,12 +129,11 @@ class SimpleGpSurrogate(SurrogateModel):
         mean_diff = self._observations[:self._size] - self._mean_estimate * torch.ones(self._size)
         self._var_estimate = mean_diff.T @ self._corr_inv @ mean_diff / self._size
 
-    def compute_corr_vector(self,
-                            x: torch.Tensor,
-                            data_points: Union[torch.Tensor, None] = None):
+    def _compute_corr_vector(self,
+                             x: torch.Tensor,
+                             data_points: Union[torch.Tensor, None] = None):
         """
         Computes the vector of correlations with respect to the current data points.
-        :param data_points:
         :param x:
         :return:
         """
@@ -196,7 +192,3 @@ class SimpleGpSurrogate(SurrogateModel):
         self._corr_matrix.zero_()
         self._observations.zero_()
         self._corr_inv = None
-
-    @property
-    def num_dimensions(self):
-        return self._num_dimensions

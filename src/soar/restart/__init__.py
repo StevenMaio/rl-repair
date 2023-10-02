@@ -1,11 +1,9 @@
 from src.utils.config import PARAMS
 from .RestartMechanism import RestartMechanism
 from .SampleMaxRestart import SampleMaxRestart
-from .CeiMaxRestart import CeiMaxRestart
 
 restart_mechanisms = {
-    'SampleMaxRestart': SampleMaxRestart,
-    'CeiMaxRestart': CeiMaxRestart
+    'SampleMaxRestart': SampleMaxRestart
 }
 
 def restart_mechanism_from_config(config: dict):

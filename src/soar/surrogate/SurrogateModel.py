@@ -58,8 +58,3 @@ class SurrogateModel(ABC):
     @abstractmethod
     def data_points(self) -> torch.Tensor:
         raise Exception("data_points not implemented")
-
-    @property
-    @abstractmethod
-    def num_dimensions(self):
-        ...
