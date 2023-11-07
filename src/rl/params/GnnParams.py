@@ -1,7 +1,8 @@
 DEFAULT_NUM_VAR_NODE_FEATURES = 11
 DEFAULT_NUM_CONS_NODE_FEATURES = 10
 DEFAULT_NUM_EDGE_FEATURES = 3
-DEFAULT_INTERMEDIATE_LAYERS = 32
+DEFAULT_INTERMEDIATE_LAYERS = 16
+# DEFAULT_INTERMEDIATE_LAYERS = 32
 DEFAULT_HIDDEN_LAYERS = 32
 DEFAULT_NUM_GNN_ITERATIONS = 2
 DEFAULT_ADD_BATCH_NORM_PARAMS = True
@@ -22,7 +23,8 @@ class GnnParams:
                  num_var_node_features: int = DEFAULT_NUM_VAR_NODE_FEATURES,
                  num_cons_node_features: int = DEFAULT_NUM_CONS_NODE_FEATURES,
                  num_edge_features: int = DEFAULT_NUM_EDGE_FEATURES,
-                 intermediate_layers: int = DEFAULT_INTERMEDIATE_LAYERS, hidden_layers: int = DEFAULT_HIDDEN_LAYERS,
+                 intermediate_layers: int = DEFAULT_INTERMEDIATE_LAYERS,
+                 hidden_layers: int = DEFAULT_HIDDEN_LAYERS,
                  num_gnn_iterations: int = DEFAULT_NUM_GNN_ITERATIONS,
                  add_batch_norm_params: bool = DEFAULT_ADD_BATCH_NORM_PARAMS,
                  additional_var_scoring_features: int = DEFAULT_ADDITIONAL_VAR_SCORING_FEATURES):

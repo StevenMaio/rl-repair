@@ -14,7 +14,8 @@ value_fixing_strategies = {
     'GoodOjbective': GoodObjective,
     'BadObjective': BadObjective,
     'LpFixingStrategy': LpFixingStrategy,
-    'SmallestViolationStrategy': LeastLocksStrategy
+    'SmallestViolationStrategy': LeastLocksStrategy,
+    'LeastLocksStrategy': LeastLocksStrategy
 }
 
 

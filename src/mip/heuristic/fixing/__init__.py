@@ -4,11 +4,13 @@ from .FixingOrderStrategy import FixingOrderStrategy
 from .LeftRightOrder import LeftRightOrder
 from .RandomFixingOrder import RandomFixingOrder
 from .TypeFixingOrder import TypeFixingOrder
+from .VariableLocksOrder import VariableLocksOrder
 
 fixing_order_strategies = {
     'RandomFixingOrder': RandomFixingOrder,
     'LeftRightOrder': LeftRightOrder,
-    'TypeFixingOrder': TypeFixingOrder
+    'TypeFixingOrder': TypeFixingOrder,
+    'VariableLocksOrder': VariableLocksOrder,
 }
 
 

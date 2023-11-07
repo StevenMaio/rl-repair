@@ -62,6 +62,8 @@ class RepairWalk(RepairStrategy):
         for iter_num in range(self._max_iterations):
             model.update()
             cons = self._sample_violated_constraint(model, generator=generator)
+            if cons is None:
+                continue
             var, domain_change = self._select_shift_candidate(model,
                                                               cons,
                                                               generator=generator)
