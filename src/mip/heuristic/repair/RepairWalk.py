@@ -105,10 +105,15 @@ class RepairWalk(RepairStrategy):
 
     def _sample_violated_constraint(self, model: "Model", generator=None) -> "Constraint":
         violated_constraints = list(filter(lambda c: c.is_violated(), model.constraints))
-        idx = torch.randint(len(violated_constraints),
-                            (1, ),
-                            generator=generator).item()
-        return violated_constraints[idx]
+        N = len(violated_constraints)
+        if N == 0:
+            return
+        else:
+            idx = torch.randint(low=0,
+                                high=len(violated_constraints),
+                                size=(1, ),
+                                generator=generator).item()
+            return violated_constraints[idx]
 
     def find_shift_candidates(self,
                               model: "Model",
