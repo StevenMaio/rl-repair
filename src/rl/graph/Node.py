@@ -84,8 +84,12 @@ class Node:
                 self._features[VarFeatIdx.IS_CONTINUOUS] = 1.0
             self._features[VarFeatIdx.OBJECTIVE_COEF] = var.objective_coefficient
             self._features[VarFeatIdx.APPEARANCE_SCORE] = var.column.size / len(model.constraints)
-            self._features[VarFeatIdx.PORTION_UP_LOCKS] = var.num_up_locks / var.column.size
-            self._features[VarFeatIdx.PORTION_DOWN_LOCKS] = var.num_down_locks / var.column.size
+            if var.column.size == 0:
+                self._features[VarFeatIdx.PORTION_UP_LOCKS] = 0
+                self._features[VarFeatIdx.PORTION_DOWN_LOCKS] = 0
+            else:
+                self._features[VarFeatIdx.PORTION_UP_LOCKS] = var.num_up_locks / var.column.size
+                self._features[VarFeatIdx.PORTION_DOWN_LOCKS] = var.num_down_locks / var.column.size
         self._features[VarFeatIdx.LOCAL_DOMAIN_SIZE] = var.local_domain.size() / var.global_domain.size()
         self._features[VarFeatIdx.LOCAL_UPPER_BOUND] = var.ub
         self._features[VarFeatIdx.LOCAL_LOWER_BOUND] = var.lb
