@@ -93,6 +93,8 @@ class EsParallelTrajectories(GradientEstimator):
                 indices = torch.randint(len(instances), (self._batch_size,))
                 batch = [instances[i] for i in indices]
                 batch_size = self._batch_size * self._num_trajectories
+            if self._mirrored_sampling:
+                batch_size *= 2
             gradient_estimate = self._run_instances_in_parallel(batch, fprl)
             self._logger.info('END_GRADIENT_COMPUTATION success_rate=%.2f', self._num_successes / batch_size)
             return gradient_estimate

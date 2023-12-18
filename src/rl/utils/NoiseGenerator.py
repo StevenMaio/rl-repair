@@ -17,7 +17,8 @@ class NoiseGenerator:
             epsilon = torch.normal(0,
                                    std=std,
                                    generator=generator)
-            if torch.rand(1).item() <= dropout_p:
+            if torch.rand(1,
+                          generator=generator).item() <= dropout_p:
                 epsilon.zero_()
             if in_shared_mem:
                 epsilon.share_memory_()
