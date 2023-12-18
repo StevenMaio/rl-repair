@@ -3,7 +3,7 @@ from torch import nn
 
 from src.rl.params import GnnParams
 from src.rl.architecture import MultilayerPerceptron
-from src.rl.architecture.GraphNeuralNetworkV3 import GraphNeuralNetworkV3 as GraphNeuralNetwork
+from src.rl.architecture.GraphNeuralNetworkV2 import GraphNeuralNetworkV2 as GraphNeuralNetwork
 
 
 class PolicyArchitecture(nn.Module):
