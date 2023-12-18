@@ -47,7 +47,7 @@ def _run_trajectory(fprl, instance, noise_seed, rng_seed, noise_std_deviation, m
         noise.add_to_iterator(policy_architecture_copy.parameters())
         generator.manual_seed(rng_seed)
         fprl.find_solution(model, generator=generator)
-        return fprl.reward, noise_seed
+        return fprl.reward, noise_seed, mirrored
 
 
 class EsParallelTrajectories(GradientEstimator):
@@ -130,9 +130,14 @@ class EsParallelTrajectories(GradientEstimator):
                                     gradient_estimate,
                                     noise_generator):
         generator = torch.Generator()
-        for reward, noise_seed in results:
+        for reward, noise_seed, mirrored in results:
             if reward > 0:
                 generator.manual_seed(noise_seed)
-                noise = noise_generator.sample(generator=generator)
+                noise = noise_generator.sample(generator=generator,
+                                               dropout_p=self._dropout_p)
+                if mirrored:
+                    noise.scale(-reward)
+                else:
+                    noise.scale(reward)
                 gradient_estimate.add_to_self(noise)
                 self._num_successes += 1

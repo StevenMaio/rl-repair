@@ -99,6 +99,8 @@ def train_main(args):
 
 
 if __name__ == '__main__':
+    import torch.multiprocessing as mp
+    mp.set_sharing_strategy('file_system')
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='command',
                                        help='command for the solver',
