@@ -1,11 +1,13 @@
 from .Trainer import Trainer
 from .FirstOrderTrainer import FirstOrderTrainer
+from .FirstOrderRestartTrainer import FirstOrderRestartTrainer
 
 from src.soar import SOAR
 
 trainers = {
     'SOAR': SOAR,
-    'FirstOrderTrainer': FirstOrderTrainer
+    'FirstOrderTrainer': FirstOrderTrainer,
+    'FirstOrderRestartTrainer': FirstOrderRestartTrainer,
 }
 
 
