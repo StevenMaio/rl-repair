@@ -117,7 +117,10 @@ class FirstOrderTrainer:
                                            gradient_estimate)
             self._logger.info('END_OF_EPOCH epoch=%d best_val=%.2f', epoch, self._best_val_score)
             if (epoch + 1) % self._iters_to_progress_check == 0:
-                self._check_progress(fprl, data_set, model_output)
+                finished_training = self._check_progress(fprl, data_set, model_output)
+                # exit training if val can't be improved anymore
+                if finished_training:
+                    break
         # load best policy architecture and compute test score
         policy_architecture.load_state_dict(self._best_policy.state_dict())
         if model_output is not None:
@@ -138,7 +141,16 @@ class FirstOrderTrainer:
         self._logger.info('END_TRAINING test_score=%.2f', test_score)
 
     def _check_progress(self, fprl, data_set, model_output):
+        """
+        Compute current val score and save the current architecture if it's an improvement.
+
+        :param fprl:
+        :param data_set:
+        :param model_output:
+        :return: true if best_val=1.00 and false otherwise
+        """
         policy_architecture = fprl.policy_architecture
+        val_score = 0.00
         if len(data_set.validation_instances) > 0:
             raw_val_score = self._evaluate_instances(fprl, data_set.validation_instances)
             self._val_progress_checker.update_progress(raw_val_score)
@@ -156,7 +168,7 @@ class FirstOrderTrainer:
                 self._logger.info('PARAMETER_RESET')
         if model_output is not None:
             torch.save(self._best_policy.state_dict(), model_output)
-        # TODO: save trainer data
+        return val_score == 1.00
 
     def _evaluate_instances(self, fprl, instances):
         if self._eval_in_parallel:
@@ -205,7 +217,6 @@ class FirstOrderTrainer:
         params = config[PARAMS]
         gradient_estimator = gradient_estimator_from_config(config[GRADIENT_ESTIMATOR])
         optimization_method = optimizer_fom_config(config[OPTIMIZATION_METHOD])
-        # TODO: create the validation progress checker
         val_progress_checker = progress_checker_from_config(config[VAL_PROGRESS_CHECKER])
 
         return FirstOrderTrainer(optimization_method=optimization_method,

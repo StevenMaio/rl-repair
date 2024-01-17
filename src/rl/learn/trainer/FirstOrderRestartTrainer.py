@@ -144,6 +144,9 @@ class FirstOrderRestartTrainer:
                 self._best_training_policy.load_state_dict(policy_architecture.state_dict())
                 if model_output is not None:
                     torch.save(self._best_training_policy.state_dict(), model_output)
+                # exit training if val_score can't be improved
+                if best_val_score == 1.00:
+                    break
         # load best policy architecture and compute test score
         policy_architecture.load_state_dict(self._best_training_policy.state_dict())
         if len(data_set.testing_instances) > 0:
@@ -186,7 +189,9 @@ class FirstOrderRestartTrainer:
                               epoch,
                               self._best_val_score)
             if (epoch + 1) % self._iters_to_progress_check == 0:
-                self._check_progress(fprl, data_set)
+                inner_loop_finished = self._check_progress(fprl, data_set)
+                if inner_loop_finished:
+                    break
         # load best policy found during inner loop
         policy_architecture.load_state_dict(self._best_restart_policy.state_dict())
         self._logger.info('END_INNER_TRAINING restart_num=%d best_val_score=%.2f',
@@ -195,7 +200,15 @@ class FirstOrderRestartTrainer:
         return self._best_val_score
 
     def _check_progress(self, fprl, data_set):
+        """
+        Compute current val score and save the current architecture if it's an improvement.
+
+        :param fprl:
+        :param data_set:
+        :return: true if best_val=1.00 and false otherwise
+        """
         policy_architecture = fprl.policy_architecture
+        val_score = 0.00
         if len(data_set.validation_instances) > 0:
             raw_val_score = self._evaluate_instances(fprl, data_set.validation_instances)
             self._val_progress_checker.update_progress(raw_val_score)
@@ -211,6 +224,7 @@ class FirstOrderRestartTrainer:
                 self._optimization_method.reset()
                 self._val_progress_checker.reset()
                 self._logger.info('PARAMETER_RESET')
+        return val_score == 1.00
 
     def _evaluate_instances(self, fprl, instances):
         if self._eval_in_parallel:
