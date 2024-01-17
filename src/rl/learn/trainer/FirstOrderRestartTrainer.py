@@ -74,8 +74,8 @@ class FirstOrderRestartTrainer:
     _best_restart_policy: PolicyArchitecture
 
     # restart results
-    _best_restart_score: float
-    _best_restart_policy: PolicyArchitecture
+    _init_policy: PolicyArchitecture
+    _best_training_policy: PolicyArchitecture
 
     def __init__(self,
                  optimization_method: FirstOrderMethod,
@@ -96,6 +96,7 @@ class FirstOrderRestartTrainer:
         self._logger = logging.getLogger(__package__)
         self._best_training_policy = PolicyArchitecture(GnnParams)
         self._best_restart_policy = PolicyArchitecture(GnnParams)
+        self._init_policy = PolicyArchitecture(GnnParams)
         self._val_progress_checker = val_progress_checker
         self._eval_in_parallel = eval_in_parallel
         self._minimum_training_epochs = minimum_restart_epochs
@@ -120,6 +121,7 @@ class FirstOrderRestartTrainer:
                           torch.initial_seed())
         if len(data_set.testing_instances) > 0:
             init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
+            self._init_policy.load_state_dict(policy_architecture.state_dict())
         else:
             init_test_score = -1
         self._logger.info('BEGIN_TRAINING_TEST_SCORE test_score=%.2f',
@@ -142,11 +144,21 @@ class FirstOrderRestartTrainer:
                 self._best_training_policy.load_state_dict(policy_architecture.state_dict())
                 if model_output is not None:
                     torch.save(self._best_training_policy.state_dict(), model_output)
+        # load best policy architecture and compute test score
         policy_architecture.load_state_dict(self._best_training_policy.state_dict())
         if len(data_set.testing_instances) > 0:
             test_score = self._evaluate_instances(fprl, data_set.testing_instances)
         else:
             test_score = -1
+        # revert to initial policy architecture if it performed better
+        if test_score < init_test_score:
+            self._logger.info('TRAINING_REVERTING_TO_INIT_POLICY init_test_score=%.2f test_score=%.2f',
+                              init_test_score,
+                              test_score)
+            test_score = init_test_score
+            policy_architecture.load_state_dict(self._init_policy.state_dict())
+            if model_output is not None:
+                torch.save(policy_architecture.state_dict(), model_output)
         self._logger.info('END_TRAINING best_val_score=%.2f test_score=%.2f',
                           best_val_score,
                           test_score)

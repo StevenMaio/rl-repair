@@ -55,12 +55,14 @@ class FirstOrderTrainer:
     _eval_in_parallel: bool
     _worker_pool: mp.Pool
 
-    #
+    # training stats
     _best_val_score: float
     _init_test_score: float
     _final_test_score: float
     _current_epoch: int
     _best_policy: PolicyArchitecture
+
+    _init_policy: PolicyArchitecture
 
     def __init__(self,
                  optimization_method: FirstOrderMethod,
@@ -78,6 +80,7 @@ class FirstOrderTrainer:
         self._num_trajectories = num_eval_trajectories
         self._logger = logging.getLogger(__package__)
         self._best_policy = PolicyArchitecture(GnnParams)
+        self._init_policy = PolicyArchitecture(GnnParams)
         self._val_progress_checker = val_progress_checker
         self._eval_in_parallel = eval_in_parallel
         if self._eval_in_parallel:
@@ -102,6 +105,7 @@ class FirstOrderTrainer:
         self._val_progress_checker.reset()
         if len(data_set.testing_instances) > 0:
             self._init_test_score = self._evaluate_instances(fprl, data_set.testing_instances)
+            self._init_policy.load_state_dict(policy_architecture.state_dict())
         else:
             self._init_test_score = -1
         self._logger.info('BEGIN_TRAINING_TEST_SCORE test_score=%.2f',
@@ -114,7 +118,7 @@ class FirstOrderTrainer:
             self._logger.info('END_OF_EPOCH epoch=%d best_val=%.2f', epoch, self._best_val_score)
             if (epoch + 1) % self._iters_to_progress_check == 0:
                 self._check_progress(fprl, data_set, model_output)
-        # load best policy architecture
+        # load best policy architecture and compute test score
         policy_architecture.load_state_dict(self._best_policy.state_dict())
         if model_output is not None:
             torch.save(self._best_policy.state_dict(), model_output)
@@ -122,6 +126,15 @@ class FirstOrderTrainer:
             test_score = self._evaluate_instances(fprl, data_set.testing_instances)
         else:
             test_score = -1
+        # revert to initial policy if final policy is worse
+        if test_score < self._init_test_score:
+            self._logger.info('TRAINING_REVERTING_TO_INIT_POLICY init_test_score=%.2f test_score=%.2f',
+                              self._init_test_score,
+                              test_score)
+            test_score = self._init_test_score
+            policy_architecture.load_state_dict(self._init_policy.state_dict())
+            if model_output is not None:
+                torch.save(policy_architecture.state_dict(), model_output)
         self._logger.info('END_TRAINING test_score=%.2f', test_score)
 
     def _check_progress(self, fprl, data_set, model_output):
