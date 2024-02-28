@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "num_trajectories": 10,
-  "rng_seed": null,
+  "rng_seed": 18179834017097026601,
   "dataset": {
     "instances": "data/instances/k-clique/large",
     "params": {

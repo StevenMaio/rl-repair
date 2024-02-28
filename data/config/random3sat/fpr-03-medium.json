@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "num_trajectories": 10,
-  "rng_seed": null,
+  "rng_seed": 7906307535037540407,
   "dataset": {
     "instances": "data/instances/random3sat/medium",
     "params": {

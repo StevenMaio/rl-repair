@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 14366113296440465477,
   "model_output": "data/torch_models/partitioning/adam-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/partitioning/large",

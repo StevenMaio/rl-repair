@@ -1,7 +1,7 @@
 {
-  "num_workers": 25,
-  "rng_seed": null,
-  "model_output": "data/torch_models/random3sat/adam-large-10.05.pt",
+  "num_workers": 3,
+  "rng_seed": 1722628571752784622,
+  "model_output": "data/torch_models/random3sat/adam-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/random3sat/large",
     "params": {
@@ -14,13 +14,13 @@
     "class": "FixPropRepairLearn",
     "params": {
       "discount_factor": 0.4,
-      "max_backtracks": 4,
+      "max_backtracks": 2,
       "in_training": true,
       "sample_indices": true
     },
     "policy_architecture": {
       "load_architecture": true,
-      "input_model": "data/torch_models/random3sat/adam-medium-10.05.pt"
+      "input_model": "data/torch_models/random3sat/adam-medium-10.01.pt"
     },
     "repair_strategy": {
       "class": "LearnableRepairWalk",
@@ -29,12 +29,14 @@
     }
   },
   "trainer": {
-    "class": "FirstOrderTrainer",
+    "class": "FirstOrderRestartTrainer",
     "params": {
-      "num_epochs": 2000,
+      "num_epochs": 1000,
       "iters_to_progress_check": 10,
       "num_eval_trajectories": 10,
-      "log_file": "data/logs/random3sat/adam-large-10.05.txt",
+      "minimum_restart_epochs": 50,
+      "remaining_budget_allocation": 0.2,
+      "log_file": "data/logs/random3sat/adam-large-10.01.txt",
       "eval_in_parallel": true
     },
     "gradient_estimator": {

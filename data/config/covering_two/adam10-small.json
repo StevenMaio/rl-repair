@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 11347667887156432651,
   "model_output": "data/torch_models/covering_two/adam-small-10.01.pt",
   "dataset": {
     "instances": "data/instances/covering_two/small",

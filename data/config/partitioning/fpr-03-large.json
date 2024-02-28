@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "num_trajectories": 10,
-  "rng_seed": null,
+  "rng_seed": 16026762005535443918,
   "dataset": {
     "instances": "data/instances/partitioning/large",
     "params": {

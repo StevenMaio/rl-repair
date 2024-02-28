@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "rng_seed": 16356172259596058141,
-  "model_output": "data/torch_models/k-clique/adam-large-10.02.pt",
+  "model_output": "data/torch_models/k-clique/adam-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/k-clique/large",
     "params": {
@@ -34,7 +34,7 @@
       "num_epochs": 1000,
       "iters_to_progress_check": 10,
       "num_eval_trajectories": 10,
-      "log_file": "data/logs/k-clique/adam-large-10.02.txt",
+      "log_file": "data/logs/k-clique/adam-large-10.01.txt",
       "eval_in_parallel": true
     },
     "gradient_estimator": {

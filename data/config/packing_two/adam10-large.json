@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 8814627081467252533,
   "model_output": "data/torch_models/packing_two/adam-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/packing_two/large",

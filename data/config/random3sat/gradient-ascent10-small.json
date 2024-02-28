@@ -1,6 +1,6 @@
 {
-  "num_workers": 25,
-  "rng_seed": null,
+  "num_workers": 3,
+  "rng_seed": 15416830983069775105,
   "model_output": "data/torch_models/random3sat/gradient-ascent-small-10.01.pt",
   "dataset": {
     "instances": "data/instances/random3sat/small",
@@ -29,11 +29,13 @@
     }
   },
   "trainer": {
-    "class": "FirstOrderTrainer",
+    "class": "FirstOrderRestartTrainer",
     "params": {
       "num_epochs": 10000,
       "iters_to_progress_check": 10,
       "num_eval_trajectories": 10,
+      "minimum_restart_epochs": 50,
+      "remaining_budget_allocation": 0.2,
       "log_file": "data/logs/random3sat/gradient-ascent-small-10.01.txt",
       "eval_in_parallel": true
     },

@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "num_trajectories": 10,
-  "rng_seed": null,
+  "rng_seed": 12091008054018440516,
   "dataset": {
     "instances": "data/instances/covering_two/large",
     "params": {

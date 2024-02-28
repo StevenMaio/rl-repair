@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 14195220266494502170,
   "model_output": "data/torch_models/k-clique/adam-small-10.01.pt",
   "dataset": {
     "instances": "data/instances/k-clique/small",

@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 4825384325383219989,
   "model_output": "data/torch_models/covering_one/adam-medium-10.01.pt",
   "dataset": {
     "instances": "data/instances/covering_one/medium",

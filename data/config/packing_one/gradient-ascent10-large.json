@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 9410308602893994275,
   "model_output": "data/torch_models/packing_one/gradient-ascent-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/packing_one/large",

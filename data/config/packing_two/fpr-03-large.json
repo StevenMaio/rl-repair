@@ -1,7 +1,7 @@
 {
   "num_workers": 25,
   "num_trajectories": 10,
-  "rng_seed": null,
+  "rng_seed": 5259023622406442322,
   "dataset": {
     "instances": "data/instances/packing_two/large",
     "params": {

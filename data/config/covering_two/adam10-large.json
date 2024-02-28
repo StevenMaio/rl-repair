@@ -1,6 +1,6 @@
 {
   "num_workers": 25,
-  "rng_seed": null,
+  "rng_seed": 9474969508609261884,
   "model_output": "data/torch_models/covering_two/adam-large-10.01.pt",
   "dataset": {
     "instances": "data/instances/covering_two/large",
@@ -31,7 +31,7 @@
   "trainer": {
     "class": "FirstOrderTrainer",
     "params": {
-      "num_epochs": 1000,
+      "num_epochs": 2000,
       "iters_to_progress_check": 10,
       "num_eval_trajectories": 10,
       "log_file": "data/logs/covering_two/adam-large-10.01.txt",
