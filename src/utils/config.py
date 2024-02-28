@@ -1,4 +1,4 @@
-NUM_THREADS = 2
+NUM_THREADS = 4
 NUM_WORKERS = "num_workers"
 MODEL_OUTPUT = "model_output"
 

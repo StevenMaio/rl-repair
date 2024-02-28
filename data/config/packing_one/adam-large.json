@@ -1,0 +1,71 @@
+{
+  "num_workers": 20,
+  "rng_seed": null,
+  "model_output": "data/torch_models/packing_one/adam-large-01.01.pt",
+  "dataset": {
+    "instances": "data/instances/packing_one/large",
+    "params": {
+      "validation_portion": 0.2,
+      "testing_portion": 0.2,
+      "rng_seed": 5002
+    }
+  },
+  "heuristic": {
+    "class": "FixPropRepairLearn",
+    "params": {
+      "discount_factor": 0.4,
+      "max_backtracks": 2,
+      "in_training": true,
+      "sample_indices": true
+    },
+    "policy_architecture": {
+      "load_architecture": true,
+      "input_model": "data/torch_models/packing_one/adam-medium-01.01.pt"
+    },
+    "repair_strategy": {
+      "class": "LearnableRepairWalk",
+      "params": {
+      }
+    }
+  },
+  "trainer": {
+    "class": "FirstOrderTrainer",
+    "params": {
+      "num_epochs": 1000,
+      "iters_to_progress_check": 10,
+      "num_eval_trajectories": 10,
+      "log_file": "data/logs/packing_one/adam-large-01.01.txt",
+      "eval_in_parallel": true
+    },
+    "gradient_estimator": {
+      "class": "EsParallelTrajectories",
+      "params": {
+        "num_trajectories": 5,
+        "batch_size": 1,
+        "noise_std_deviation": 0.2
+      }
+    },
+    "optimization_method": {
+      "class": "Adam",
+      "params": {
+        "learning_rate": 0.001,
+        "first_moment_decay_rate": 0.9,
+        "second_moment_decay_rate": 0.99,
+        "epsilon": 1e-8
+      }
+    },
+    "val_progress_checker": {
+      "class": "LevelChecker",
+      "params": {
+        "max_num_worse_iters": 100,
+        "time_series": {
+            "class": "KMovingMeans",
+            "params": {
+              "k": 5,
+              "dampened": true
+            }
+        }
+      }
+    }
+  }
+}

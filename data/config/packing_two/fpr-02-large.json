@@ -1,0 +1,33 @@
+{
+  "num_workers": 25,
+  "num_trajectories": 10,
+  "rng_seed": null,
+  "dataset": {
+    "instances": "data/instances/packing_two/large",
+    "params": {
+      "validation_portion": 0.2,
+      "testing_portion": 0.2,
+      "rng_seed": 11389
+    }
+  },
+  "heuristic": {
+    "class": "FixPropRepair",
+    "params": {
+      "discount_factor": 0.4,
+      "max_backtracks": 4
+    },
+    "fixing_order_strategy": {
+      "class": "RandomFixingOrder",
+      "params": {}
+    },
+    "value_fixing_strategy": {
+      "class": "RandomValueFixing",
+      "params": {}
+
+    },
+    "repair_strategy": {
+      "class": "RepairWalk",
+      "params": {}
+    }
+  }
+}

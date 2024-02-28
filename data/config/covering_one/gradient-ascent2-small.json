@@ -1,0 +1,70 @@
+{
+  "num_workers": 25,
+  "rng_seed": null,
+  "model_output": "data/torch_models/covering_one/gradient-ascent-small-02.01.pt",
+  "dataset": {
+    "instances": "data/instances/covering_one/small",
+    "params": {
+      "validation_portion": 0.2,
+      "testing_portion": 0.2,
+      "rng_seed": 11389
+    }
+  },
+  "heuristic": {
+    "class": "FixPropRepairLearn",
+    "params": {
+      "discount_factor": 0.4,
+      "max_backtracks": 2,
+      "in_training": true,
+      "sample_indices": true
+    },
+    "policy_architecture": {
+      "load_architecture": false,
+      "input_model": null
+    },
+    "repair_strategy": {
+      "class": "LearnableRepairWalk",
+      "params": {
+      }
+    }
+  },
+  "trainer": {
+    "class": "FirstOrderTrainer",
+    "params": {
+      "num_epochs": 10000,
+      "iters_to_progress_check": 10,
+      "num_eval_trajectories": 10,
+      "log_file": "data/logs/covering_one/gradient-ascent-small-02.01.txt",
+      "eval_in_parallel": true
+    },
+    "gradient_estimator": {
+      "class": "NesParallelTrajectories",
+      "params": {
+        "num_trajectories": 3,
+        "batch_size": 1,
+        "noise_std_deviation": 0.2,
+        "mirrored_sampling": true,
+        "dropout_p": 0.5
+      }
+    },
+    "optimization_method": {
+      "class": "GradientAscent",
+      "params": {
+        "learning_rate": 1.00
+      }
+    },
+    "val_progress_checker": {
+      "class": "LevelChecker",
+      "params": {
+        "max_num_worse_iters": 100,
+        "time_series": {
+            "class": "KMovingMeans",
+            "params": {
+              "k": 5,
+              "dampened": true
+            }
+        }
+      }
+    }
+  }
+}
